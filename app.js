@@ -119,8 +119,9 @@
       const d=new Date(y,m-1,n);
       const iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
       const outside=d.getMonth()!==m-1;
+      const todayIso=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
       const dayEvents=events.filter(e=>e.date===iso).slice(0,3);
-      html+='<div class="calendar-day '+(outside?"outside":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+dayEvents.map(e=>{const label=e.kind==="deadline"?"Дедлайн":e.kind==="reportDeadline"?"Отчёт":e.kind==="eventDate"?"Событие":"Старт";return '<button class="day-event '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":e.kind==="eventDate"?"event":"start")+'" data-open="'+e.item.id+'"><span>'+label+'</span>'+esc(e.item.title)+'</button>'}).join("")+'</div></div>';
+      html+='<div class="calendar-day '+(outside?"outside ":"")+(iso===todayIso?"today":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+dayEvents.map(e=>{const label=e.kind==="deadline"?"Дедлайн":e.kind==="reportDeadline"?"Отчёт":e.kind==="eventDate"?"Событие":"Старт";return '<button class="day-event '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":e.kind==="eventDate"?"event":"start")+'" data-open="'+e.item.id+'"><span>'+label+'</span>'+esc(e.item.title)+'</button>'}).join("")+'</div></div>';
     }
     $("#calendarGrid").innerHTML=html;
     $("#calendarAgenda").innerHTML=events.map(e=>{
@@ -157,7 +158,8 @@
     const links=[...(i.links||[]),...(i.materials||[])];
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
     detail+='<section class="detail-section"><h3>Источник</h3><p>'+esc(i.source||"Рабочие материалы")+'</p></section>';
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker"><span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span></div>'+detail;
+    const dateTags='<span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span>'+(i.reportDeadline?'<span class="tag report-tag">Публикация до '+esc(fmt(i.reportDeadline))+'</span>':"");
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker">'+dateTags+'</div>'+detail;
     lastFocused=document.activeElement;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
