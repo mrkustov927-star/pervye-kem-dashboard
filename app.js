@@ -13,7 +13,7 @@
 
   const parseDate=d=>d?new Date(d+"T12:00:00+03:00"):null;
   const days=d=>Math.ceil((parseDate(d)-now)/86400000);
-  const endDate=i=>parseDate(i.reportDeadline||i.deadline||i.eventDate);
+  const endDate=i=>{const ds=[i.start,i.deadline,i.eventDate,i.reportDeadline].map(parseDate).filter(Boolean);return ds.length?new Date(Math.max(...ds.map(d=>d.getTime()))):null;};
   const expired=i=>i.status==="done"||(endDate(i)&&endDate(i)<now);
   const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
   const fmt=d=>{const x=parseDate(d);return x?x.getDate()+" "+monthNames[x.getMonth()]:"Срок уточняется"};
