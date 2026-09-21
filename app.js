@@ -190,9 +190,8 @@
     const links=[...(i.links||[]),...(i.materials||[])];
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
     const audience=audienceText(i);
-    const dateTags='<span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span>'+(i.reportDeadline?'<span class="tag report-tag">Публикация до '+esc(fmt(i.reportDeadline))+'</span>':"")+(audience?'<span class="tag">'+esc(audience)+'</span>':"");
     const overview='<section class="detail-overview"><div><span>Срок</span><strong>'+esc(deadlineLabel(i))+'</strong></div>'+(i.eventDate?'<div><span>Дата события</span><strong>'+esc(fmt(i.eventDate))+'</strong></div>':"")+(i.reportDeadline?'<div><span>Публикация / отчёт</span><strong>до '+esc(fmt(i.reportDeadline))+'</strong></div>':"")+(audience?'<div><span>Для кого</span><strong>'+esc(audience.replace("Кому: ",""))+'</strong></div>':"")+'</section>';
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker">'+dateTags+'</div>'+overview+detail;
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p>'+overview+detail;
     lastFocused=document.activeElement;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
