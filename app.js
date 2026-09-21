@@ -166,8 +166,20 @@
     const i=items.find(x=>x.id===id); if(!i)return;
     let detail="";
     if(i.steps&&i.steps.length) detail+='<section class="detail-section"><h3>Что нужно сделать</h3><div class="steps">'+i.steps.map((s,n)=>'<div class="step"><b>'+(n+1)+'</b><p>'+esc(s)+'</p></div>').join("")+'</div></section>';
-    if(i.formats&&i.formats.length) detail+='<section class="detail-section"><h3>Форматы участия</h3><div class="steps">'+i.formats.map((s,n)=>'<div class="step"><b>'+(n+1)+'</b><p>'+esc(s)+'</p></div>').join("")+'</div></section>';
+    if(i.formatDetails&&i.formatDetails.length){
+      detail+='<section class="detail-section"><h3>Форматы участия</h3><p class="section-help">Выберите подходящий формат — внутри указано, для кого он подходит и что конкретно нужно провести.</p><div class="format-details">'+i.formatDetails.map((f,n)=>'<details class="format-detail" '+(n===0?'open':'')+'><summary><span><b>'+(n+1)+'</b><strong>'+esc(f.name)+'</strong></span><em>'+esc(f.audience||'')+'</em></summary><div class="format-body">'+(f.description?'<p>'+esc(f.description)+'</p>':'')+((f.actions||[]).length?'<ol>'+f.actions.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'')+(f.result?'<div class="format-result"><strong>Результат:</strong> '+esc(f.result)+'</div>':'')+'</div></details>').join('')+'</div></section>';
+    } else if(i.formats&&i.formats.length){
+      detail+='<section class="detail-section"><h3>Форматы участия</h3><div class="steps">'+i.formats.map((s,n)=>'<div class="step"><b>'+(n+1)+'</b><p>'+esc(s)+'</p></div>').join("")+'</div></section>';
+    }
     if(i.deliverables&&i.deliverables.length) detail+='<section class="detail-section"><h3>Что сдаём</h3>'+i.deliverables.map(x=>'<p>✓ '+esc(x)+'</p>').join("")+'</section>';
+    if(i.publication){
+      const p=i.publication;
+      detail+='<section class="detail-section publication-section"><h3>Публикация и отчётность</h3><div class="publication-grid">'
+        +(p.deadline?'<div><span>Срок</span><strong>'+esc(p.deadline)+'</strong></div>':'')
+        +(p.where?'<div><span>Где разместить</span><strong>'+esc(p.where)+'</strong></div>':'')
+        +(p.report?'<div><span>Что приложить</span><strong>'+esc(p.report)+'</strong></div>':'')
+        +'</div>'+((p.requirements||[]).length?'<ul class="publication-list">'+p.requirements.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+'</section>';
+    }
     if(i.hashtags&&i.hashtags.length) detail+='<section class="detail-section"><h3>Хештеги</h3><p>'+i.hashtags.map(esc).join(" ")+'</p><div class="detail-actions"><button data-copy-hashtags="'+i.id+'">Скопировать хештеги</button></div></section>';
     if(i.hashtagsByOrg&&i.hashtagsByOrg.length) detail+='<section class="detail-section"><h3>Хештеги первичек</h3>'+i.hashtagsByOrg.map(x=>'<p>'+esc(x)+'</p>').join("")+'<div class="detail-actions"><button data-copy-hashtags="'+i.id+'">Скопировать список</button></div></section>';
     if(i.notes&&i.notes.length) detail+='<section class="detail-section"><h3>Важно</h3>'+i.notes.map(x=>'<p>'+esc(x)+'</p>').join("")+'</section>';
