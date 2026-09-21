@@ -40,13 +40,6 @@
     }).join("");
   }
 
-  function renderNotice(){
-    const list=items.filter(i=>!expired(i)&&i.deadline&&days(i.deadline)>=0).sort((a,b)=>parseDate(a.deadline)-parseDate(b.deadline));
-    const i=list[0];
-    if(!i){$("#priorityNotice").hidden=true;return}
-    $("#priorityNotice").innerHTML='<div class="notice-inner"><div class="notice-icon">!</div><div class="notice-copy"><span>Ближайший срок</span><b>'+esc(i.title)+' — '+esc(deadlineLabel(i))+'</b><small>'+esc(i.short)+'</small></div><button class="notice-action" data-open="'+i.id+'">Открыть →</button></div>';
-  }
-
   function renderHero(){
     const active=items.filter(i=>!expired(i)&&["task","project","action","event"].includes(i.type));
     const week=active.filter(i=>i.deadline&&days(i.deadline)>=0&&days(i.deadline)<=7).length;
@@ -209,7 +202,6 @@
     if(e.key==="Escape"){closeModal();$("#updatesDrawer").hidden=true;$("#searchPanel").hidden=true;document.body.style.overflow=""}
   });
 
-  renderNotice();
   renderHero();
   renderTasks();
   renderCalendar();
