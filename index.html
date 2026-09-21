@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#D90912" />
   <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
   <title>Первые · Кемский округ — рабочий кабинет</title>
-  <link rel="icon" href="logo-pervye-short.png" type="image/png" />
+  <link rel="icon" href="logo-pervye.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="#top" aria-label="Движение Первых · Кемский муниципальный округ">
-        <img class="brand-logo" src="logo-pervye-short.png" alt="Первые" />
+        <img class="brand-logo" src="logo-pervye.png" alt="Первые" />
         <span class="brand-copy"><small>Кемский муниципальный округ</small></span>
       </a>
       <nav class="header-links" aria-label="Навигация">
@@ -21,7 +21,6 @@
         <a href="#calendar">Календарь</a>
         <a href="#projects">Акции и проекты</a>
         <a href="#docs">Документы</a>
-        <button class="updates-btn" id="updatesButton" type="button"><span></span>Обновления</button>
       </nav>
     </div>
   </header>
@@ -30,7 +29,7 @@
     <section class="intro">
       <div class="wrap intro-grid">
         <div class="hero-copy">
-          <div class="hero-meta"><span class="eyebrow">Рабочий кабинет первичных организаций</span><span class="updated-stamp" id="updatedStamp"></span></div>
+          <span class="eyebrow">Рабочий кабинет первичных организаций</span>
           <h1>Всё важное<br><span>в одном месте.</span></h1>
           <p>Задачи, дедлайны, акции, проекты и документы без поиска по длинной переписке. Откройте сайт — и сразу видно, что делать сейчас и к чему готовиться дальше.</p>
 
@@ -54,7 +53,7 @@
             <b>Ближайшие дедлайны</b>
           </div>
           <div class="hero-mini-list" id="heroMiniList"></div>
-          <p id="heroUpdated">Карточки обновляются по мере появления новых задач и уточнений.</p>
+          <p>Нажмите на нужный дедлайн — откроется полная инструкция: что сделать, что отправить и куда перейти.</p>
         </aside>
       </div>
     </section>
@@ -109,18 +108,6 @@
       </div>
     </section>
 
-    <section class="updates-section" id="updates" aria-labelledby="updates-title">
-      <div class="wrap updates-layout">
-        <div class="updates-lead">
-          <span class="eyebrow">Журнал изменений</span>
-          <h2 id="updates-title">Что изменилось</h2>
-          <p>Если срок, ссылка или порядок действий уточнились, это фиксируется здесь. Так проще понять, что нового появилось после вашего последнего визита.</p>
-          <button id="openAllUpdates" class="secondary-action" type="button">Открыть всю историю</button>
-        </div>
-        <div class="updates-card" id="updatesList"></div>
-      </div>
-    </section>
-
     <section class="archive-section" id="archive">
       <div class="wrap">
         <details class="archive-box">
@@ -144,17 +131,6 @@
       <button class="modal-close" type="button" data-close-modal aria-label="Закрыть">×</button>
       <div id="modalContent"></div>
     </article>
-  </div>
-
-  <div class="drawer" id="updatesDrawer" hidden>
-    <button class="drawer-backdrop" type="button" data-close-drawer aria-label="Закрыть"></button>
-    <aside class="drawer-panel">
-      <div class="drawer-head">
-        <div><span class="eyebrow">Хронология</span><h2>Все изменения</h2></div>
-        <button type="button" data-close-drawer>×</button>
-      </div>
-      <div id="drawerUpdates"></div>
-    </aside>
   </div>
 
   <div class="search-panel" id="searchPanel" hidden></div>
