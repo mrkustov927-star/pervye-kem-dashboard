@@ -53,14 +53,16 @@
     const upcoming=active.filter(i=>i.deadline&&days(i.deadline)>=0)
       .sort((a,b)=>(priorityRank[a.priority]??2)-(priorityRank[b.priority]??2)||parseDate(a.deadline)-parseDate(b.deadline))
       .slice(0,3);
-    const updated=new Date(D.meta.updatedAt);
-    const updatedText="Обновлено "+updated.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})+" в "+updated.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
-    $("#updatedStamp").textContent=updatedText;
-    $("#heroUpdated").textContent=updatedText+". Новые уточнения фиксируются в журнале изменений.";
     $("#heroMiniList").innerHTML=upcoming.map(i=>{
       const d=parseDate(i.deadline);
       return '<button class="hero-mini-card" data-open="'+i.id+'"><span class="mini-date '+(i.priority==="urgent"?"urgent":"")+'"><b>'+d.getDate()+'</b><small>'+monthShort[d.getMonth()]+'</small></span><span class="mini-info"><small>'+esc(i.category)+'</small><b>'+esc(i.title)+'</b><em>'+esc(deadlineLabel(i))+'</em></span><span class="mini-arrow">→</span></button>';
     }).join("");
+  }
+
+  function audienceText(i){
+    const map={schools:"школы",spo:"СПО",family:"семьи",mentors:"наставники",other:"другие организации"};
+    const a=(i.audience||[]).map(x=>map[x]||x);
+    return a.length?"Кому: "+a.join(", "):"";
   }
 
   function renderTasks(){
@@ -72,26 +74,59 @@
     if(taskFilter==="report") list=list.filter(i=>(i.deliverables||[]).length||(i.badges||[]).some(b=>/отч/i.test(b)));
     if(taskFilter==="schools") list=list.filter(i=>(i.audience||[]).includes("schools"));
     list.sort((a,b)=>(parseDate(a.deadline)||new Date(2100,0))-(parseDate(b.deadline)||new Date(2100,0)));
+
     $("#taskList").innerHTML=list.map(i=>{
       const d=i.deadline?parseDate(i.deadline):null;
-      return '<button class="task-card '+(i.priority==="urgent"?"urgent":i.priority==="high"?"high":"")+'" data-open="'+i.id+'"><span class="task-top"><span class="task-date"><b>'+(d?d.getDate():"—")+'</b><small>'+(d?monthShort[d.getMonth()]:"срок")+'</small></span><span class="task-status">'+esc(deadlineLabel(i))+'</span></span><small class="task-category">'+esc(i.category)+'</small><h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p><span class="task-bottom"><span>'+esc(typeLabel[i.type])+'</span><strong>Подробнее →</strong></span></button>';
+      const steps=(i.steps||[]).map((s,n)=>'<li><b>'+(n+1)+'</b><span>'+esc(s)+'</span></li>').join("");
+      const deliverables=(i.deliverables||[]).length
+        ? '<div class="task-report"><strong>Что отправить / подтвердить</strong><ul>'+(i.deliverables||[]).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'
+        : "";
+      const notes=(i.notes||[]).length
+        ? '<div class="task-important"><strong>Важно</strong>'+(i.notes||[]).map(x=>'<p>'+esc(x)+'</p>').join("")+'</div>'
+        : "";
+      const links=[...(i.links||[]),...(i.materials||[])];
+      const actions=links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")
+        +(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")
+        +'<button class="ghost" data-open="'+i.id+'">Открыть карточку</button>';
+
+      return '<article class="task-card-rich '+(i.priority==="urgent"?"urgent":i.priority==="high"?"high":"")+'">'
+        +'<div class="task-rich-head"><div class="task-date"><b>'+(d?d.getDate():"—")+'</b><small>'+(d?monthShort[d.getMonth()]:"срок")+'</small></div><div class="task-head-copy"><div class="task-labels">'+badgeMarkup(i)+'<span class="task-status">'+esc(deadlineLabel(i))+'</span></div><small class="task-category">'+esc(i.category)+(audienceText(i)?" · "+esc(audienceText(i)):"")+'</small><h3>'+esc(i.title)+'</h3><p class="task-summary">'+esc(i.short)+'</p></div></div>'
+        +(steps?'<div class="task-instructions"><strong>Что сделать</strong><ol>'+steps+'</ol></div>':"")
+        +deliverables+notes
+        +'<div class="task-rich-actions">'+actions+'</div>'
+        +'</article>';
     }).join("")||'<div class="empty">В этой категории пока ничего нет.</div>';
   }
 
   function renderProjects(){
     const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"]];
     $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>!expired(i)&&["action","project","event","info"].includes(i.type));
+    let list=items.filter(i=>!expired(i)&&["action","project","event"].includes(i.type));
     if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter);
     if(projectFilter==="upcoming") list=list.filter(i=>["upcoming","soon","new"].includes(i.status));
     if(projectFilter==="active") list=list.filter(i=>i.status==="active");
     list.sort((a,b)=>(parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0)));
-    const icons={action:"✦",project:"◇",event:"◉",info:"i"};
+    const icons={action:"✦",project:"◇",event:"◉"};
+
     $("#projectList").innerHTML=list.map(i=>{
       const start=i.start?fmt(i.start):"";
       const end=i.deadline?fmt(i.deadline):"";
-      const secondary=i.reportDeadline?"публикация до "+fmt(i.reportDeadline):(end&&end!==start?"до "+end:deadlineLabel(i));
-      return '<button class="project-card '+i.type+'" data-open="'+i.id+'"><span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></span><small class="project-category">'+esc(i.category)+'</small><h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p><span class="project-bottom"><span>'+esc(typeLabel[i.type])+'</span><strong>Подробнее →</strong></span></button>';
+      const secondary=i.reportDeadline?"Публикация до "+fmt(i.reportDeadline):(end&&end!==start?"До "+end:deadlineLabel(i));
+      const formats=(i.formats||[]).length
+        ? '<div class="project-help"><strong>Можно выбрать</strong><ul>'+(i.formats||[]).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'
+        : "";
+      const nextSteps=(i.steps||[]).slice(0,3);
+      const steps=nextSteps.length
+        ? '<div class="project-help"><strong>Главное</strong><ol>'+nextSteps.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol></div>'
+        : "";
+      const report=i.reportDeadline?'<div class="project-report">Отчёт / публикация: <b>'+esc(fmt(i.reportDeadline))+'</b></div>':"";
+      return '<article class="project-card '+i.type+'">'
+        +'<div class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></div>'
+        +'<small class="project-category">'+esc(i.category)+(audienceText(i)?" · "+esc(audienceText(i)):"")+'</small>'
+        +'<h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p>'
+        +formats+steps+report
+        +'<div class="project-bottom"><button class="project-open" data-open="'+i.id+'">Полная инструкция →</button></div>'
+        +'</article>';
     }).join("")||'<div class="empty">Ничего не найдено.</div>';
   }
 
@@ -127,13 +162,6 @@
     $("#docsList").innerHTML=D.documents.map(d=>'<article class="doc-card"><div class="doc-icon">'+(d.kind==="Курс"?"▶":d.kind==="Источник"?"PDF":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p>'+(d.url?'<a href="'+d.url+'" target="_blank" rel="noopener">Открыть →</a>':'<button data-toast="Источник сохранён в рабочей базе.">Источник в базе</button>')+'</div></article>').join("");
   }
 
-  function renderUpdates(selector,limit=99){
-    $(selector).innerHTML=D.updates.slice(0,limit).map(u=>{
-      const d=new Date(u.date);
-      return '<div class="update-item"><div class="update-time">'+d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})+' · '+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})+'</div><strong>'+esc(u.title)+'</strong><p>'+esc(u.text)+'</p></div>';
-    }).join("");
-  }
-
   function renderArchive(){
     const list=items.filter(expired).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
@@ -150,7 +178,6 @@
     if(i.notes&&i.notes.length) detail+='<section class="detail-section"><h3>Важно</h3>'+i.notes.map(x=>'<p>'+esc(x)+'</p>').join("")+'</section>';
     const links=[...(i.links||[]),...(i.materials||[])];
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
-    detail+='<section class="detail-section"><h3>Источник</h3><p>'+esc(i.source||"Рабочие материалы")+'</p></section>';
     const dateTags='<span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span>'+(i.reportDeadline?'<span class="tag report-tag">Публикация до '+esc(fmt(i.reportDeadline))+'</span>':"");
     $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker">'+dateTags+'</div>'+detail;
     lastFocused=document.activeElement;
@@ -186,20 +213,16 @@
     x=e.target.closest("[data-project-filter]"); if(x){projectFilter=x.dataset.projectFilter;renderProjects();return}
     x=e.target.closest("[data-month]"); if(x){calendarMonth=x.dataset.month;renderCalendar();return}
     x=e.target.closest("[data-close-modal]"); if(x){closeModal();return}
-    x=e.target.closest("[data-close-drawer]"); if(x){$("#updatesDrawer").hidden=true;document.body.style.overflow="";if(lastFocused&&lastFocused.focus)lastFocused.focus();return}
     x=e.target.closest("[data-copy-hashtags]"); if(x){copyItem(x.dataset.copyHashtags,true);return}
     x=e.target.closest("[data-copy]"); if(x){copyItem(x.dataset.copy);return}
     x=e.target.closest("[data-toast]"); if(x){toast(x.dataset.toast);return}
     if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")) $("#searchPanel").hidden=true;
   });
 
-  const openUpdates=()=>{lastFocused=document.activeElement;renderUpdates("#drawerUpdates");$("#updatesDrawer").hidden=false;document.body.style.overflow="hidden";requestAnimationFrame(()=>$(".drawer-head button").focus())};
-  $("#updatesButton").onclick=openUpdates;
-  $("#openAllUpdates").onclick=openUpdates;
   $("#globalSearch").oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#globalSearch").focus()}
-    if(e.key==="Escape"){closeModal();$("#updatesDrawer").hidden=true;$("#searchPanel").hidden=true;document.body.style.overflow=""}
+    if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow=""}
   });
 
   renderHero();
@@ -207,6 +230,5 @@
   renderCalendar();
   renderProjects();
   renderDocs();
-  renderUpdates("#updatesList",5);
   renderArchive();
 })();
