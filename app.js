@@ -8,7 +8,7 @@
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   let taskFilter="all";
   let projectFilter="all";
-  let calendarMonth="2026-09";
+  let calendarMonth="2026-09";\n  let lastFocused=null;
 
   const parseDate=d=>d?new Date(d+"T12:00:00+03:00"):null;
   const days=d=>Math.ceil((parseDate(d)-now)/86400000);
@@ -55,7 +55,14 @@
       '<div class="hero-stat"><b>'+week+'</b><span>дедлайнов на 7 дней</span></div>'+
       '<div class="hero-stat"><b>'+reports+'</b><span>задач с отчётностью</span></div>'+
       '<div class="hero-stat"><b>'+october+'</b><span>активностей октября</span></div>';
-    const upcoming=active.filter(i=>i.deadline&&days(i.deadline)>=0).sort((a,b)=>parseDate(a.deadline)-parseDate(b.deadline)).slice(0,3);
+    const priorityRank={urgent:0,high:1,normal:2};
+    const upcoming=active.filter(i=>i.deadline&&days(i.deadline)>=0)
+      .sort((a,b)=>(priorityRank[a.priority]??2)-(priorityRank[b.priority]??2)||parseDate(a.deadline)-parseDate(b.deadline))
+      .slice(0,3);
+    const updated=new Date(D.meta.updatedAt);
+    const updatedText="Обновлено "+updated.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})+" в "+updated.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+    $("#updatedStamp").textContent=updatedText;
+    $("#heroUpdated").textContent=updatedText+". Новые уточнения фиксируются в журнале изменений.";
     $("#heroMiniList").innerHTML=upcoming.map(i=>{
       const d=parseDate(i.deadline);
       return '<button class="hero-mini-card" data-open="'+i.id+'"><span class="mini-date '+(i.priority==="urgent"?"urgent":"")+'"><b>'+d.getDate()+'</b><small>'+monthShort[d.getMonth()]+'</small></span><span class="mini-info"><small>'+esc(i.category)+'</small><b>'+esc(i.title)+'</b><em>'+esc(deadlineLabel(i))+'</em></span><span class="mini-arrow">→</span></button>';
@@ -89,7 +96,8 @@
     $("#projectList").innerHTML=list.map(i=>{
       const start=i.start?fmt(i.start):"";
       const end=i.deadline?fmt(i.deadline):"";
-      return '<button class="project-card '+i.type+'" data-open="'+i.id+'"><span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+(end&&end!==start?"до "+esc(end):esc(deadlineLabel(i)))+'</small></span></span><small class="project-category">'+esc(i.category)+'</small><h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p><span class="project-bottom"><span>'+esc(typeLabel[i.type])+'</span><strong>Подробнее →</strong></span></button>';
+      const secondary=i.reportDeadline?"публикация до "+fmt(i.reportDeadline):(end&&end!==start?"до "+end:deadlineLabel(i));
+      return '<button class="project-card '+i.type+'" data-open="'+i.id+'"><span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></span><small class="project-category">'+esc(i.category)+'</small><h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p><span class="project-bottom"><span>'+esc(typeLabel[i.type])+'</span><strong>Подробнее →</strong></span></button>';
     }).join("")||'<div class="empty">Ничего не найдено.</div>';
   }
 
@@ -111,7 +119,7 @@
       const iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
       const outside=d.getMonth()!==m-1;
       const dayEvents=events.filter(e=>e.date===iso).slice(0,3);
-      html+='<div class="calendar-day '+(outside?"outside":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+dayEvents.map(e=>'<button class="day-event '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":e.kind==="eventDate"?"event":"")+'" data-open="'+e.item.id+'">'+esc(e.item.title)+'</button>').join("")+'</div></div>';
+      html+='<div class="calendar-day '+(outside?"outside":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+dayEvents.map(e=>{const label=e.kind==="deadline"?"Дедлайн":e.kind==="reportDeadline"?"Отчёт":e.kind==="eventDate"?"Событие":"Старт";return '<button class="day-event '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":e.kind==="eventDate"?"event":"start")+'" data-open="'+e.item.id+'"><span>'+label+'</span>'+esc(e.item.title)+'</button>'}).join("")+'</div></div>';
     }
     $("#calendarGrid").innerHTML=html;
     $("#calendarAgenda").innerHTML=events.map(e=>{
@@ -149,11 +157,13 @@
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
     detail+='<section class="detail-section"><h3>Источник</h3><p>'+esc(i.source||"Рабочие материалы")+'</p></section>';
     $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker"><span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span></div>'+detail;
+    lastFocused=document.activeElement;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
+    requestAnimationFrame(()=>$(".modal-close").focus());
   }
 
-  function closeModal(){ $("#detailModal").hidden=true; document.body.style.overflow=""; }
+  function closeModal(){ const modal=$("#detailModal"); if(!modal.hidden){modal.hidden=true;document.body.style.overflow="";if(lastFocused&&lastFocused.focus)lastFocused.focus();} }
   function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("show"),1800); }
 
   async function copyItem(id,hashtags=false){
@@ -166,8 +176,11 @@
     q=q.trim().toLowerCase();
     const panel=$("#searchPanel");
     if(!q){panel.hidden=true;panel.innerHTML="";return}
-    const res=items.filter(i=>[i.title,i.short,i.category,i.source,...(i.steps||[]),...(i.hashtags||[])].join(" ").toLowerCase().includes(q)).slice(0,8);
-    panel.innerHTML='<strong>Результаты поиска</strong><div class="search-results">'+(res.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("")||'<span>Ничего не найдено</span>')+'</div>';
+    const resItems=items.filter(i=>[i.title,i.short,i.category,i.source,...(i.steps||[]),...(i.hashtags||[])].join(" ").toLowerCase().includes(q)).slice(0,6);
+    const resDocs=D.documents.filter(d=>[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
+    const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
+    const docHtml=resDocs.map(d=>d.url?'<a class="search-result" href="'+d.url+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+' · документ</span></a>':'<button class="search-result" data-toast="Документ сохранён в рабочей базе."><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+' · источник</span></button>').join("");
+    panel.innerHTML='<strong>Результаты поиска</strong><div class="search-results">'+(itemHtml+docHtml||'<span>Ничего не найдено</span>')+'</div>';
     panel.hidden=false;
   }
 
@@ -177,14 +190,14 @@
     x=e.target.closest("[data-project-filter]"); if(x){projectFilter=x.dataset.projectFilter;renderProjects();return}
     x=e.target.closest("[data-month]"); if(x){calendarMonth=x.dataset.month;renderCalendar();return}
     x=e.target.closest("[data-close-modal]"); if(x){closeModal();return}
-    x=e.target.closest("[data-close-drawer]"); if(x){$("#updatesDrawer").hidden=true;document.body.style.overflow="";return}
+    x=e.target.closest("[data-close-drawer]"); if(x){$("#updatesDrawer").hidden=true;document.body.style.overflow="";if(lastFocused&&lastFocused.focus)lastFocused.focus();return}
     x=e.target.closest("[data-copy-hashtags]"); if(x){copyItem(x.dataset.copyHashtags,true);return}
     x=e.target.closest("[data-copy]"); if(x){copyItem(x.dataset.copy);return}
     x=e.target.closest("[data-toast]"); if(x){toast(x.dataset.toast);return}
     if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")) $("#searchPanel").hidden=true;
   });
 
-  const openUpdates=()=>{renderUpdates("#drawerUpdates");$("#updatesDrawer").hidden=false;document.body.style.overflow="hidden"};
+  const openUpdates=()=>{lastFocused=document.activeElement;renderUpdates("#drawerUpdates");$("#updatesDrawer").hidden=false;document.body.style.overflow="hidden";requestAnimationFrame(()=>$(".drawer-head button").focus())};
   $("#updatesButton").onclick=openUpdates;
   $("#openAllUpdates").onclick=openUpdates;
   $("#globalSearch").oninput=e=>doSearch(e.target.value);
