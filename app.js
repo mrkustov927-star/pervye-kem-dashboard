@@ -8,7 +8,8 @@
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   let taskFilter="all";
   let projectFilter="all";
-  let calendarMonth="2026-09";\n  let lastFocused=null;
+  let calendarMonth="2026-09";
+  let lastFocused=null;
 
   const parseDate=d=>d?new Date(d+"T12:00:00+03:00"):null;
   const days=d=>Math.ceil((parseDate(d)-now)/86400000);
