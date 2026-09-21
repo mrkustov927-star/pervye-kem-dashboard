@@ -71,9 +71,9 @@
   }
 
   function renderTasks(){
-    const filters=[["all","✨ Все"],["urgent","🔥 Срочно"],["high","⚡ Высокий приоритет"],["report","✓ Нужен отчёт"],["schools","🏫 Для школ"]];
+    const filters=[["all","Все"],["urgent","Срочно"],["high","Высокий приоритет"],["report","Нужен отчёт"],["schools","Для школ"]];
     $("#taskFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(taskFilter===f[0]?"active":"")+'" data-task-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>!expired(i)&&["task","project"].includes(i.type));
+    let list=items.filter(i=>!expired(i)&&(i.type==="task"||(i.type==="project"&&(i.deadline||i.status==="active"||i.status==="new"))));
     if(taskFilter==="urgent") list=list.filter(i=>i.priority==="urgent");
     if(taskFilter==="high") list=list.filter(i=>["urgent","high"].includes(i.priority));
     if(taskFilter==="report") list=list.filter(i=>(i.deliverables||[]).length||(i.badges||[]).some(b=>/отч/i.test(b)));
@@ -86,7 +86,7 @@
   }
 
   function renderProjects(){
-    const filters=[["all","✨ Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"]];
+    const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"]];
     $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
     let list=items.filter(i=>!expired(i)&&["action","project","event","info"].includes(i.type));
     if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter);
