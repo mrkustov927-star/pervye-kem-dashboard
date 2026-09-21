@@ -159,7 +159,7 @@
   }
 
   function renderDocs(){
-    $("#docsList").innerHTML=D.documents.map(d=>'<article class="doc-card"><div class="doc-icon">'+(d.kind==="Курс"?"▶":d.kind==="Источник"?"PDF":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p>'+(d.url?'<a href="'+d.url+'" target="_blank" rel="noopener">Открыть →</a>':'<button data-toast="Источник сохранён в рабочей базе.">Источник в базе</button>')+'</div></article>').join("");
+    $("#docsList").innerHTML=D.documents.filter(d=>d.url).map(d=>'<article class="doc-card"><div class="doc-icon">'+(d.kind==="Курс"?"▶":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p><a href="'+d.url+'" target="_blank" rel="noopener">Открыть →</a></div></article>').join("");
   }
 
   function renderArchive(){
@@ -200,9 +200,9 @@
     const panel=$("#searchPanel");
     if(!q){panel.hidden=true;panel.innerHTML="";return}
     const resItems=items.filter(i=>[i.title,i.short,i.category,i.source,...(i.steps||[]),...(i.hashtags||[])].join(" ").toLowerCase().includes(q)).slice(0,6);
-    const resDocs=D.documents.filter(d=>[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
+    const resDocs=D.documents.filter(d=>d.url&&[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
     const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
-    const docHtml=resDocs.map(d=>d.url?'<a class="search-result" href="'+d.url+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+' · документ</span></a>':'<button class="search-result" data-toast="Документ сохранён в рабочей базе."><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+' · источник</span></button>').join("");
+    const docHtml=resDocs.map(d=>'<a class="search-result" href="'+d.url+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></a>').join("");
     panel.innerHTML='<strong>Результаты поиска</strong><div class="search-results">'+(itemHtml+docHtml||'<span>Ничего не найдено</span>')+'</div>';
     panel.hidden=false;
   }
