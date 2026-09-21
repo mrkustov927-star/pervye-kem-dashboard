@@ -9,7 +9,8 @@ window.DASHBOARD_DATA = {
     {id:"schools",name:"Школы"},
     {id:"spo",name:"СПО"},
     {id:"family",name:"Родные–Любимые"},
-    {id:"mentors",name:"Наставники"},\n    {id:"other",name:"Другие организации"}
+    {id:"mentors",name:"Наставники"},
+    {id:"other",name:"Другие организации"}
   ],
   items: [
     {
