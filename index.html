@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#D90912" />
+  <meta name="description" content="Единый дашборд первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
+  <title>Первые · Кемский округ — рабочий дашборд</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topline" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#dashboard" aria-label="Главная">
+        <span class="brand-kicker">Движение Первых</span>
+        <strong>Кемский округ</strong>
+      </a>
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="#dashboard" data-nav="dashboard">Главная</a>
+        <a href="#calendar" data-nav="calendar">Календарь</a>
+        <a href="#tasks" data-nav="tasks">Задачи</a>
+        <a href="#projects" data-nav="projects">Акции и проекты</a>
+        <a href="#docs" data-nav="docs">Документы</a>
+      </nav>
+      <button class="updates-button" id="updatesButton" type="button" aria-label="Последние изменения">
+        <span class="pulse-dot"></span>
+        <span id="updatesLabel">Обновления</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="view active" id="view-dashboard" data-view="dashboard">
+      <div class="shell">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="status-line">
+              <span class="live-pill">Актуально</span>
+              <span id="lastUpdated">Обновлено: 21 сентября 2026</span>
+            </div>
+            <h1>Что нужно сделать сейчас</h1>
+            <p class="hero-lead">Все ближайшие задачи, акции и дедлайны первичных организаций — в одном месте. Без поиска по десяткам сообщений в чате.</p>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+              <input id="globalSearch" type="search" placeholder="Найти задачу, акцию, проект или документ…" autocomplete="off" />
+              <kbd>⌘ K</kbd>
+            </div>
+            <div class="hero-actions">
+              <button class="btn primary" type="button" data-jump="tasks">Смотреть срочные задачи</button>
+              <button class="btn secondary" type="button" data-jump="calendar">Открыть календарь</button>
+            </div>
+          </div>
+          <aside class="hero-focus" id="heroFocus" aria-label="Ближайший дедлайн"></aside>
+        </section>
+
+        <section class="stats-grid" id="statsGrid" aria-label="Краткая сводка"></section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Приоритет</p>
+              <h2>Требует внимания</h2>
+            </div>
+            <a class="text-link" href="#tasks">Все задачи <span>→</span></a>
+          </div>
+          <div class="cards-grid" id="urgentCards"></div>
+        </section>
+
+        <section class="split-grid section-block">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Ближайшие 14 дней</p>
+                <h2>Календарь</h2>
+              </div>
+              <a class="icon-link" href="#calendar" aria-label="Открыть календарь">↗</a>
+            </div>
+            <div id="miniTimeline" class="timeline"></div>
+          </div>
+
+          <div class="panel updates-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Не пропустите</p>
+                <h2>Последние изменения</h2>
+              </div>
+            </div>
+            <div id="updatesList" class="updates-list"></div>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Октябрь</p>
+              <h2>Готовимся заранее</h2>
+            </div>
+            <a class="text-link" href="#projects">Все проекты <span>→</span></a>
+          </div>
+          <div class="cards-grid" id="upcomingCards"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view" id="view-calendar" data-view="calendar">
+      <div class="shell page-shell">
+        <div class="page-title-row">
+          <div>
+            <p class="eyebrow">Планирование</p>
+            <h1>Календарь</h1>
+            <p>Акции, мероприятия и дедлайны по месяцам.</p>
+          </div>
+          <div class="segmented" id="calendarMonths"></div>
+        </div>
+        <div class="calendar-layout">
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <aside class="calendar-agenda">
+            <div class="agenda-head">
+              <strong id="agendaTitle">События месяца</strong>
+              <span id="agendaCount"></span>
+            </div>
+            <div id="calendarAgenda"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-tasks" data-view="tasks">
+      <div class="shell page-shell">
+        <div class="page-title-row">
+          <div>
+            <p class="eyebrow">Контроль</p>
+            <h1>Задачи первичек</h1>
+            <p>Конкретные действия: что сделать, к какому сроку и что отправить.</p>
+          </div>
+        </div>
+        <div class="filter-bar" id="taskFilters"></div>
+        <div class="list-stack" id="taskList"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-projects" data-view="projects">
+      <div class="shell page-shell">
+        <div class="page-title-row">
+          <div>
+            <p class="eyebrow">Возможности</p>
+            <h1>Акции и проекты</h1>
+            <p>Федеральные, региональные и муниципальные активности с краткой механикой участия.</p>
+          </div>
+        </div>
+        <div class="filter-bar" id="projectFilters"></div>
+        <div class="cards-grid project-grid" id="projectList"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-docs" data-view="docs">
+      <div class="shell page-shell">
+        <div class="page-title-row">
+          <div>
+            <p class="eyebrow">Быстрый доступ</p>
+            <h1>Документы и ссылки</h1>
+            <p>Методические материалы, формы, инструкции и полезные сервисы.</p>
+          </div>
+        </div>
+        <div class="docs-grid" id="docsList"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-archive" data-view="archive">
+      <div class="shell page-shell">
+        <div class="page-title-row">
+          <div>
+            <p class="eyebrow">История</p>
+            <h1>Архив</h1>
+            <p>Завершённые акции и прошедшие задачи остаются доступными для поиска.</p>
+          </div>
+        </div>
+        <div class="cards-grid" id="archiveList"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Мобильная навигация">
+    <a href="#dashboard" data-nav="dashboard"><span>⌂</span><small>Главная</small></a>
+    <a href="#calendar" data-nav="calendar"><span>▦</span><small>Календарь</small></a>
+    <a href="#tasks" data-nav="tasks"><span>✓</span><small>Задачи</small></a>
+    <a href="#projects" data-nav="projects"><span>◇</span><small>Проекты</small></a>
+    <a href="#docs" data-nav="docs"><span>≡</span><small>Ещё</small></a>
+  </nav>
+
+  <div class="modal" id="detailModal" hidden>
+    <button class="modal-backdrop" type="button" data-close-modal aria-label="Закрыть"></button>
+    <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      <div id="modalContent"></div>
+    </article>
+  </div>
+
+  <div class="drawer" id="updatesDrawer" hidden>
+    <button class="drawer-backdrop" type="button" data-close-drawer aria-label="Закрыть"></button>
+    <aside class="drawer-panel">
+      <div class="drawer-head">
+        <div><p class="eyebrow">Хронология</p><h2>Что изменилось</h2></div>
+        <button type="button" data-close-drawer>×</button>
+      </div>
+      <div id="drawerUpdates" class="updates-list"></div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <div><strong>Первые · Кемский округ</strong><span>Рабочий информационный дашборд первичных организаций</span></div>
+      <a href="#archive">Архив завершённых задач</a>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
