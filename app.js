@@ -65,6 +65,13 @@
     return a.length?"Кому: "+a.join(", "):"";
   }
 
+  function quickMeta(i){
+    if((i.deliverables||[]).length) return "Результат: "+i.deliverables[0];
+    if((i.formats||[]).length) return "Форматы участия: "+i.formats.length;
+    if((i.steps||[]).length) return "Порядок действий: "+i.steps.length+" шагов";
+    return "";
+  }
+
   function renderTasks(){
     const filters=[["all","Все"],["urgent","Срочно"],["high","Высокий приоритет"],["report","Нужен отчёт"],["schools","Для школ"]];
     $("#taskFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(taskFilter===f[0]?"active":"")+'" data-task-filter="'+f[0]+'">'+f[1]+'</button>').join("");
@@ -77,24 +84,18 @@
 
     $("#taskList").innerHTML=list.map(i=>{
       const d=i.deadline?parseDate(i.deadline):null;
-      const steps=(i.steps||[]).map((s,n)=>'<li><b>'+(n+1)+'</b><span>'+esc(s)+'</span></li>').join("");
-      const deliverables=(i.deliverables||[]).length
-        ? '<div class="task-report"><strong>Что отправить / подтвердить</strong><ul>'+(i.deliverables||[]).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'
-        : "";
-      const notes=(i.notes||[]).length
-        ? '<div class="task-important"><strong>Важно</strong>'+(i.notes||[]).map(x=>'<p>'+esc(x)+'</p>').join("")+'</div>'
-        : "";
-      const links=[...(i.links||[]),...(i.materials||[])];
-      const actions=links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")
-        +(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")
-        +'<button class="ghost" data-open="'+i.id+'">Открыть карточку</button>';
-
-      return '<article class="task-card-rich '+(i.priority==="urgent"?"urgent":i.priority==="high"?"high":"")+'">'
-        +'<div class="task-rich-head"><div class="task-date"><b>'+(d?d.getDate():"—")+'</b><small>'+(d?monthShort[d.getMonth()]:"срок")+'</small></div><div class="task-head-copy"><div class="task-labels">'+badgeMarkup(i)+'<span class="task-status">'+esc(deadlineLabel(i))+'</span></div><small class="task-category">'+esc(i.category)+(audienceText(i)?" · "+esc(audienceText(i)):"")+'</small><h3>'+esc(i.title)+'</h3><p class="task-summary">'+esc(i.short)+'</p></div></div>'
-        +(steps?'<div class="task-instructions"><strong>Что сделать</strong><ol>'+steps+'</ol></div>':"")
-        +deliverables+notes
-        +'<div class="task-rich-actions">'+actions+'</div>'
-        +'</article>';
+      const report=(i.deliverables||[]).length?'<span class="compact-chip report">Нужен результат</span>':"";
+      const aud=audienceText(i)?'<span class="compact-chip">'+esc(audienceText(i).replace("Кому: ",""))+'</span>':"";
+      const meta=quickMeta(i);
+      return '<button class="task-card-compact '+(i.priority==="urgent"?"urgent":i.priority==="high"?"high":"")+'" data-open="'+i.id+'">'
+        +'<span class="compact-top"><span class="task-date"><b>'+(d?d.getDate():"—")+'</b><small>'+(d?monthShort[d.getMonth()]:"срок")+'</small></span><span class="compact-status">'+esc(deadlineLabel(i))+'</span></span>'
+        +'<span class="compact-category">'+esc(i.category)+'</span>'
+        +'<strong class="compact-title">'+esc(i.title)+'</strong>'
+        +'<span class="compact-summary">'+esc(i.short)+'</span>'
+        +'<span class="compact-meta">'+aud+report+'</span>'
+        +(meta?'<span class="compact-hint">'+esc(meta)+'</span>':"")
+        +'<span class="compact-open">Открыть инструкцию →</span>'
+        +'</button>';
     }).join("")||'<div class="empty">В этой категории пока ничего нет.</div>';
   }
 
@@ -112,21 +113,15 @@
       const start=i.start?fmt(i.start):"";
       const end=i.deadline?fmt(i.deadline):"";
       const secondary=i.reportDeadline?"Публикация до "+fmt(i.reportDeadline):(end&&end!==start?"До "+end:deadlineLabel(i));
-      const formats=(i.formats||[]).length
-        ? '<div class="project-help"><strong>Можно выбрать</strong><ul>'+(i.formats||[]).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>'
-        : "";
-      const nextSteps=(i.steps||[]).slice(0,3);
-      const steps=nextSteps.length
-        ? '<div class="project-help"><strong>Главное</strong><ol>'+nextSteps.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol></div>'
-        : "";
-      const report=i.reportDeadline?'<div class="project-report">Отчёт / публикация: <b>'+esc(fmt(i.reportDeadline))+'</b></div>':"";
-      return '<article class="project-card '+i.type+'">'
-        +'<div class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></div>'
-        +'<small class="project-category">'+esc(i.category)+(audienceText(i)?" · "+esc(audienceText(i)):"")+'</small>'
-        +'<h3>'+esc(i.title)+'</h3><p>'+esc(i.short)+'</p>'
-        +formats+steps+report
-        +'<div class="project-bottom"><button class="project-open" data-open="'+i.id+'">Полная инструкция →</button></div>'
-        +'</article>';
+      const extra=(i.formats||[]).length?i.formats.length+" формата участия":((i.steps||[]).length?i.steps.length+" шагов":"");
+      return '<button class="project-card-compact '+i.type+'" data-open="'+i.id+'">'
+        +'<span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></span>'
+        +'<span class="project-category">'+esc(i.category)+'</span>'
+        +'<strong class="project-compact-title">'+esc(i.title)+'</strong>'
+        +'<span class="project-compact-summary">'+esc(i.short)+'</span>'
+        +(extra?'<span class="project-compact-hint">'+esc(extra)+'</span>':"")
+        +'<span class="compact-open">Полная инструкция →</span>'
+        +'</button>';
     }).join("")||'<div class="empty">Ничего не найдено.</div>';
   }
 
@@ -178,8 +173,10 @@
     if(i.notes&&i.notes.length) detail+='<section class="detail-section"><h3>Важно</h3>'+i.notes.map(x=>'<p>'+esc(x)+'</p>').join("")+'</section>';
     const links=[...(i.links||[]),...(i.materials||[])];
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
-    const dateTags='<span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span>'+(i.reportDeadline?'<span class="tag report-tag">Публикация до '+esc(fmt(i.reportDeadline))+'</span>':"");
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker">'+dateTags+'</div>'+detail;
+    const audience=audienceText(i);
+    const dateTags='<span class="tag">'+esc(i.category)+'</span><span class="tag">'+esc(deadlineLabel(i))+'</span>'+(i.reportDeadline?'<span class="tag report-tag">Публикация до '+esc(fmt(i.reportDeadline))+'</span>':"")+(audience?'<span class="tag">'+esc(audience)+'</span>':"");
+    const overview='<section class="detail-overview"><div><span>Срок</span><strong>'+esc(deadlineLabel(i))+'</strong></div>'+(i.reportDeadline?'<div><span>Публикация / отчёт</span><strong>до '+esc(fmt(i.reportDeadline))+'</strong></div>':"")+(audience?'<div><span>Для кого</span><strong>'+esc(audience.replace("Кому: ",""))+'</strong></div>':"")+'</section>';
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p><div class="modal-kicker">'+dateTags+'</div>'+overview+detail;
     lastFocused=document.activeElement;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
