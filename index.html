@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#D90912" />
   <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
   <title>Первые · Кемский округ — рабочий кабинет</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="logo-pervye-short.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,12 +14,9 @@
 
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="#top" aria-label="Первые · Кемский округ">
-        <span class="brand-accent"></span>
-        <span class="brand-copy">
-          <b>Движение Первых</b>
-          <small>Кемский муниципальный округ</small>
-        </span>
+      <a class="brand" href="#top" aria-label="Движение Первых · Кемский муниципальный округ">
+        <img class="brand-logo" src="logo-pervye-short.png" alt="Первые" />
+        <span class="brand-copy"><small>Кемский муниципальный округ</small></span>
       </a>
       <nav class="header-links" aria-label="Навигация">
         <a href="#now">Сейчас</a>
@@ -35,7 +32,7 @@
     <section class="intro">
       <div class="wrap intro-grid">
         <div class="hero-copy">
-          <span class="eyebrow">Рабочий кабинет первичных организаций</span>
+          <div class="hero-meta"><span class="eyebrow">Рабочий кабинет первичных организаций</span><span class="updated-stamp" id="updatedStamp"></span></div>
           <h1>Всё важное<br><span>в одном месте.</span></h1>
           <p>Задачи, дедлайны, акции, проекты и документы без поиска по длинной переписке. Откройте сайт — и сразу видно, что делать сейчас и к чему готовиться дальше.</p>
 
@@ -59,7 +56,7 @@
             <b>Ближайшие дедлайны</b>
           </div>
           <div class="hero-mini-list" id="heroMiniList"></div>
-          <p>Карточки обновляются по мере появления новых задач и уточнений.</p>
+          <p id="heroUpdated">Карточки обновляются по мере появления новых задач и уточнений.</p>
         </aside>
       </div>
     </section>
