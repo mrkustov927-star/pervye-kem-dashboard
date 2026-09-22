@@ -339,7 +339,13 @@
     q=q.trim().toLowerCase();
     const panel=$("#searchPanel");
     if(!q){panel.hidden=true;panel.innerHTML="";return}
-    const resItems=items.filter(i=>isPublic(i)&&[i.title,i.short,i.category,...(i.steps||[]),...(i.hashtags||[]),...(i.formats||[])].join(" ").toLowerCase().includes(q)).slice(0,7);
+    const resItems=items.filter(i=>isPublic(i)&&[
+      i.title,i.short,i.category,
+      ...(i.steps||[]),...(i.hashtags||[]),...(i.formats||[]),...(i.notes||[]),...(i.deliverables||[]),
+      ...(i.links||[]).flatMap(x=>[x.label,x.url]),
+      ...(i.materials||[]).flatMap(x=>[x.label,x.url]),
+      ...(i.attachments||[]).map(x=>x.name)
+    ].join(" ").toLowerCase().includes(q)).slice(0,7);
     const resDocs=(D.documents||[]).filter(d=>(d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))))&&[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
     const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
     const docHtml=resDocs.map(d=>d.itemId
