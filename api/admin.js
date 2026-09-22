@@ -10,6 +10,10 @@ const ALLOWED_STATUSES = new Set(["draft","new","soon","upcoming","active","done
 const ALLOWED_CALENDAR_KINDS = new Set(["concept","task","event","report","registration"]);
 const ALLOWED_FILE_EXTENSIONS = new Set(["pdf","doc","docx","xls","xlsx","ppt","pptx","png","jpg","jpeg","zip","rar","odt","ods"]);
 const MAX_FILE_BYTES = 2621440;
+const LOGIN_WINDOW = 10 * 60 * 1000;
+const LOGIN_LOCK = 15 * 60 * 1000;
+const LOGIN_LIMIT = 6;
+const loginAttempts = new Map();
 
 function json(res, status, body) {
   res.status(status);
@@ -44,6 +48,31 @@ function checkPassword(input) {
   const expected = Buffer.from(String(process.env.ADMIN_PASSWORD || ""));
   const actual = Buffer.from(String(input || ""));
   return expected.length === actual.length && expected.length > 0 && crypto.timingSafeEqual(expected, actual);
+}
+function clientKey(req) {
+  return String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown").split(",")[0].trim();
+}
+function loginGuard(req) {
+  const key = clientKey(req);
+  const now = Date.now();
+  const rec = loginAttempts.get(key);
+  if (!rec) return {ok:true,key};
+  if (rec.lockUntil && rec.lockUntil > now) return {ok:false,key,retryAfter:Math.ceil((rec.lockUntil-now)/1000)};
+  if (now - rec.firstAt > LOGIN_WINDOW) {
+    loginAttempts.delete(key);
+    return {ok:true,key};
+  }
+  return {ok:true,key};
+}
+function loginFailed(key) {
+  const now = Date.now();
+  const rec = loginAttempts.get(key);
+  const next = !rec || now-rec.firstAt>LOGIN_WINDOW ? {count:1,firstAt:now,lockUntil:0} : {...rec,count:rec.count+1};
+  if (next.count >= LOGIN_LIMIT) next.lockUntil = now + LOGIN_LOCK;
+  loginAttempts.set(key,next);
+}
+function loginSucceeded(key) {
+  loginAttempts.delete(key);
 }
 function cleanString(v, max=12000) {
   return typeof v === "string" ? v.trim().slice(0,max) : "";
@@ -110,12 +139,25 @@ function cleanSettings(v) {
   for (const key of keys) out[key] = cleanString(src[key], key === "heroLead" ? 1200 : 300);
   return out;
 }
-function slugify(s) {
-  return cleanString(s,200).toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-zа-яё0-9]+/gi,"-")
-    .replace(/^-+|-+$/g,"")
-    .slice(0,70) || "item";
+function safeId(v,prefix="item") {
+  const current = cleanString(v,90).replace(/[^a-zA-Z0-9_-]/g,"");
+  if (current && /[a-zA-Z0-9]/.test(current)) return current;
+  return prefix+"-"+Date.now().toString(36)+"-"+crypto.randomBytes(3).toString("hex");
+}
+function cleanDocuments(v) {
+  if (!Array.isArray(v)) return [];
+  return v.map(raw=>{
+    const url=cleanString(raw && raw.url,1600);
+    const itemId=cleanString(raw && raw.itemId,90).replace(/[^a-zA-Z0-9_-]/g,"");
+    return {
+      id:safeId(raw && raw.id,"resource"),
+      title:cleanString(raw && raw.title,240),
+      description:cleanString(raw && raw.description,1200),
+      kind:cleanString(raw && raw.kind,100) || "Ссылка",
+      ...(itemId?{itemId}:{}),
+      ...(!itemId && /^https?:\/\//i.test(url)?{url}:{})
+    };
+  }).filter(x=>x.title && (x.url||x.itemId)).slice(0,80);
 }
 function cleanItem(raw) {
   const type = ALLOWED_TYPES.has(raw && raw.type) ? raw.type : "task";
@@ -124,9 +166,8 @@ function cleanItem(raw) {
   const calendarKind = ALLOWED_CALENDAR_KINDS.has(raw && raw.calendarKind) ? raw.calendarKind : (type === "action" ? "concept" : type === "event" ? "event" : "task");
   const title = cleanString(raw && raw.title, 300);
   if (!title) throw new Error("Укажите название.");
-  const idBase = cleanString(raw && raw.id, 90).replace(/[^a-zA-Z0-9_-]/g,"") || slugify(title);
   const item = {
-    id: idBase,
+    id: safeId(raw && raw.id,"item"),
     type,
     title,
     short: cleanString(raw.short, 1600),
@@ -164,6 +205,25 @@ function cleanItem(raw) {
   const publication = cleanPublication(raw.publication);
   if (publication) item.publication = publication;
   return item;
+}
+function stable(v) {
+  return JSON.stringify(v ?? null);
+}
+function pushUpdate(data,title,text) {
+  data.updates = Array.isArray(data.updates) ? data.updates : [];
+  data.updates.unshift({date:new Date().toISOString(),title:cleanString(title,260),text:cleanString(text,1200)});
+  data.updates = data.updates.slice(0,30);
+}
+function describeChanges(before,after) {
+  if (!before) return "Добавлена новая карточка с полной инструкцией.";
+  const groups=[];
+  if (stable([before.start,before.deadline,before.eventDate,before.reportDeadline])!==stable([after.start,after.deadline,after.eventDate,after.reportDeadline])) groups.push("сроки");
+  if (stable([before.short,before.steps,before.completion,before.deliverables,before.formatDetails,before.formats,before.notes])!==stable([after.short,after.steps,after.completion,after.deliverables,after.formatDetails,after.formats,after.notes])) groups.push("инструкция");
+  if (stable([before.publication,before.hashtags,before.hashtagsByOrg])!==stable([after.publication,after.hashtags,after.hashtagsByOrg])) groups.push("отчётность");
+  if (stable([before.links,before.materials,before.attachments])!==stable([after.links,after.materials,after.attachments])) groups.push("ссылки и материалы");
+  if (stable([before.calendarMap,before.calendarKind])!==stable([after.calendarMap,after.calendarKind])) groups.push("календарь");
+  if (stable([before.status,before.visible,before.priority,before.audience,before.category,before.title])!==stable([after.status,after.visible,after.priority,after.audience,after.category,after.title])) groups.push("параметры карточки");
+  return groups.length ? "Уточнены: "+groups.join(", ")+".":"Карточка обновлена.";
 }
 async function gh(path, options={}) {
   const r = await fetch("https://api.github.com/repos/"+OWNER+"/"+REPO+path, {
@@ -207,15 +267,22 @@ async function saveData(data, sha, message) {
 }
 
 module.exports = async function handler(req,res) {
-  if (req.method === "GET") {
-    return json(res,200,{ok:true,configured:configured()});
-  }
+  if (req.method === "GET") return json(res,200,{ok:true,configured:configured()});
   if (req.method !== "POST") return json(res,405,{ok:false,error:"Метод не поддерживается."});
-  if (!configured()) return json(res,503,{ok:false,code:"NOT_CONFIGURED",error:"Админ-панель ещё не настроена: нужны ADMIN_PASSWORD и GITHUB_TOKEN."});
+  if (!configured()) return json(res,503,{ok:false,code:"NOT_CONFIGURED",error:"Админ-панель ещё не настроена."});
 
   const body = req.body || {};
   if (body.action === "login") {
-    if (!checkPassword(body.password)) return json(res,401,{ok:false,error:"Неверный пароль."});
+    const guard=loginGuard(req);
+    if(!guard.ok){
+      res.setHeader("Retry-After",String(guard.retryAfter||60));
+      return json(res,429,{ok:false,error:"Слишком много попыток. Попробуйте немного позже."});
+    }
+    if (!checkPassword(body.password)) {
+      loginFailed(guard.key);
+      return json(res,401,{ok:false,error:"Неверный пароль."});
+    }
+    loginSucceeded(guard.key);
     return json(res,200,{ok:true,token:signSession()});
   }
 
@@ -234,7 +301,7 @@ module.exports = async function handler(req,res) {
       if (!base64) throw new Error("Файл пуст.");
       const bytes = Buffer.from(base64,"base64");
       if (!bytes.length || bytes.length > MAX_FILE_BYTES) throw new Error("Файл должен быть не больше 2,5 МБ.");
-      const itemId = cleanString(body.itemId,90).replace(/[^a-zA-Z0-9_-]/g,"") || "card";
+      const itemId = safeId(body.itemId,"card");
       const suffix = crypto.randomBytes(6).toString("hex");
       const filePath = "files/"+itemId+"/"+Date.now()+"-"+suffix+"."+ext;
       const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
@@ -247,14 +314,22 @@ module.exports = async function handler(req,res) {
           branch:BRANCH
         })
       });
-      return json(res,200,{ok:true,attachment:{
-        name:originalName,
-        url:"/"+filePath,
-        path:filePath,
-        type:mime,
-        size:bytes.length
-      }});
+      return json(res,200,{ok:true,attachment:{name:originalName,url:"/"+filePath,path:filePath,type:mime,size:bytes.length}});
     }
+
+    if (body.action === "delete-file") {
+      const path=cleanString(body.path,1200).replace(/^\/+/, "");
+      if(!/^files\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/.test(path)) throw new Error("Некорректный путь файла.");
+      const encodedPath=path.split("/").map(encodeURIComponent).join("/");
+      const file=await gh("/contents/"+encodedPath+"?ref="+encodeURIComponent(BRANCH));
+      await gh("/contents/"+encodedPath,{
+        method:"DELETE",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message:"Удалить файл: "+path.split("/").pop(),sha:file.sha,branch:BRANCH})
+      });
+      return json(res,200,{ok:true});
+    }
+
     if (body.action === "save-settings") {
       const incoming = cleanSettings(body.settings||{});
       const {data,sha} = await loadData();
@@ -264,16 +339,31 @@ module.exports = async function handler(req,res) {
       const result = await saveData(data,sha,"Обновить настройки сайта");
       return json(res,200,{ok:true,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
+
+    if (body.action === "save-documents") {
+      const incoming=cleanDocuments(body.documents||[]);
+      const {data,sha}=await loadData();
+      data.documents=incoming;
+      pushUpdate(data,"Обновлены ссылки и документы","Актуализирован раздел быстрых ресурсов и документов.");
+      const result=await saveData(data,sha,"Обновить ссылки и документы");
+      return json(res,200,{ok:true,sha:result.commit&&result.commit.sha,updatedAt:data.meta.updatedAt,documents:incoming});
+    }
+
     if (body.action === "save-item") {
       const incoming = cleanItem(body.item||{});
       const {data,sha} = await loadData();
       data.items = Array.isArray(data.items) ? data.items : [];
       const idx = data.items.findIndex(x=>x.id===incoming.id);
+      const before=idx>=0?data.items[idx]:null;
       if (idx >= 0) data.items[idx] = incoming;
       else data.items.push(incoming);
+      if(incoming.visible!==false && incoming.status!=="draft"){
+        pushUpdate(data,(idx>=0?"Обновлено: ":"Добавлено: ")+incoming.title,describeChanges(before,incoming));
+      }
       const result = await saveData(data,sha,(idx>=0?"Обновить: ":"Добавить: ")+incoming.title);
-      return json(res,200,{ok:true,mode:idx>=0?"updated":"created",sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
+      return json(res,200,{ok:true,mode:idx>=0?"updated":"created",item:incoming,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
+
     if (body.action === "delete-item") {
       const id = cleanString(body.id,90).replace(/[^a-zA-Z0-9_-]/g,"");
       if (!id) throw new Error("Не указан ID.");
@@ -284,6 +374,7 @@ module.exports = async function handler(req,res) {
       const result = await saveData(data,sha,"Удалить карточку: "+id);
       return json(res,200,{ok:true,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
+
     return json(res,400,{ok:false,error:"Неизвестное действие."});
   } catch (e) {
     console.error(e);
