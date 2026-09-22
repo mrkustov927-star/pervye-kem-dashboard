@@ -21,6 +21,32 @@
   const fmtShort=d=>{const x=parseDate(d);return x?x.getDate()+" "+monthShort[x.getMonth()]:"—"};
   const typeLabel={task:"Задача",project:"Проект",action:"Акция",event:"Событие",info:"Информация"};
 
+  function applySiteSettings(){
+    const s=(D.meta&&D.meta.site)||{};
+    const put=(selector,value)=>{const el=$(selector);if(el&&value)el.textContent=value};
+    if(s.siteTitle){
+      document.title=s.siteTitle+" — рабочий кабинет";
+      put("#footerSiteTitle",s.siteTitle);
+    }
+    put("#districtLabel",s.districtLabel);
+    put("#heroEyebrow",s.heroEyebrow);
+    put("#heroTitle",s.heroTitle);
+    put("#heroAccent",s.heroAccent);
+    put("#heroLead",s.heroLead);
+    put("#heroPrimary",s.heroPrimary);
+    put("#heroSecondary",s.heroSecondary);
+    put("#now-title",s.nowTitle);
+    put("#nowSubtitle",s.nowSubtitle);
+    put("#calendar-title",s.calendarTitle);
+    put("#calendarSubtitle",s.calendarSubtitle);
+    put("#projects-title",s.projectsTitle);
+    put("#projectsSubtitle",s.projectsSubtitle);
+    put("#docs-title",s.docsTitle);
+    put("#docsSubtitle",s.docsSubtitle);
+    put("#archiveTitle",s.archiveTitle);
+    put("#footerSubtitle",s.footerSubtitle);
+  }
+
   function deadlineLabel(i){
     if(!i.deadline) return "Срок уточняется";
     const d=days(i.deadline);
@@ -124,7 +150,7 @@
     const first=new Date(y,m-1,1);
     const start=(first.getDay()+6)%7;
     const events=[];
-    items.forEach(i=>["start","deadline","eventDate","reportDeadline"].forEach(k=>{
+    items.filter(i=>i.visible!==false).forEach(i=>["start","deadline","eventDate","reportDeadline"].forEach(k=>{
       if(i[k]&&i[k].startsWith(calendarMonth)) events.push({date:i[k],item:i,kind:k});
     }));
     events.sort((a,b)=>parseDate(a.date)-parseDate(b.date));
@@ -239,6 +265,7 @@
     if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow=""}
   });
 
+  applySiteSettings();
   renderHero();
   renderTasks();
   renderCalendar();
