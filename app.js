@@ -153,10 +153,19 @@
     const labels={concept:"Концепция",task:"Задача",event:"Мероприятие",report:"Отчёт",registration:"Регистрация"};
     const defaultKind=i=>i.calendarKind||(i.type==="action"?"concept":i.type==="event"?"event":"task");
     const push=(date,item,kind)=>{
-      if(date&&date.startsWith(calendarMonth)) events.push({date,item,kind,label:labels[kind]||"Задача"});
+      if(!date||!kind||!date.startsWith(calendarMonth)) return;
+      if(events.some(e=>e.date===date&&e.item.id===item.id&&e.kind===kind)) return;
+      events.push({date,item,kind,label:labels[kind]||"Задача"});
     };
 
     items.filter(i=>i.visible!==false).forEach(i=>{
+      if(i.calendarMap&&typeof i.calendarMap==="object"){
+        push(i.start,i,i.calendarMap.start);
+        push(i.deadline,i,i.calendarMap.deadline);
+        push(i.eventDate,i,i.calendarMap.eventDate);
+        push(i.reportDeadline,i,i.calendarMap.reportDeadline);
+        return;
+      }
       const kind=defaultKind(i);
       if(kind==="concept"){
         push(i.start,i,"concept");
