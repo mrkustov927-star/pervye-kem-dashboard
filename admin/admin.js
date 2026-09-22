@@ -56,6 +56,21 @@
   function slugify(s){
     return String(s||"").toLowerCase().normalize("NFKD").replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,70);
   }
+  async function waitForLiveVersion(updatedAt,onState){
+    if(!updatedAt) return false;
+    const needle='"updatedAt": "'+updatedAt+'"';
+    for(let n=0;n<30;n++){
+      if(onState) onState(n);
+      await new Promise(r=>setTimeout(r,n===0?1200:2000));
+      try{
+        const response=await fetch("/data.js?check="+Date.now(),{cache:"no-store"});
+        const source=await response.text();
+        if(response.ok&&source.includes(needle)) return true;
+      }catch{}
+    }
+    return false;
+  }
+
   async function api(body){
     const r=await fetch("/api/admin",{
       method:"POST",
@@ -451,9 +466,14 @@
       $("#editorTitle").textContent=item.title;
       setDirty(false);
       updatePublishBadge();
-      $("#saveState").textContent="Опубликовано. Сайт обновляется…";
+      $("#saveState").textContent="Сохранено. Vercel обновляет сайт…";
       renderList();
       toast(result.mode==="created"?"Карточка добавлена":"Карточка обновлена");
+      const live=await waitForLiveVersion(result.updatedAt,n=>{
+        $("#saveState").textContent=n<3?"Vercel публикует изменения…":"Проверяем опубликованную версию…";
+      });
+      $("#saveState").textContent=live?"Опубликовано на основном сайте":"Сохранено в GitHub. Публикация ещё обновляется…";
+      if(live) toast("Изменения уже на сайте");
     }catch(err){
       $("#saveState").textContent="Не удалось опубликовать";
       toast(err.message);
@@ -469,11 +489,15 @@
     buttons.forEach(b=>{b.disabled=true;b.textContent="Сохраняем…"});
     $("#settingsSaveState").textContent="Сохраняем…";
     try{
-      await api({action:"save-settings",settings});
+      const result=await api({action:"save-settings",settings});
       siteSettings={...settings};
       dirty=false;
-      $("#settingsSaveState").textContent="Сохранено. Сайт обновляется…";
+      $("#settingsSaveState").textContent="Сохранено. Vercel обновляет сайт…";
       toast("Настройки сохранены");
+      const live=await waitForLiveVersion(result.updatedAt,n=>{
+        $("#settingsSaveState").textContent=n<3?"Vercel публикует настройки…":"Проверяем опубликованную версию…";
+      });
+      $("#settingsSaveState").textContent=live?"Настройки опубликованы на сайте":"Сохранено в GitHub. Публикация ещё обновляется…";
     }catch(err){
       $("#settingsSaveState").textContent="Не удалось сохранить";
       toast(err.message);
