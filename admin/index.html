@@ -16,7 +16,6 @@
         <span>Кемский муниципальный округ</span>
       </a>
       <div class="admin-header-actions">
-        <span class="connection" id="connectionState">Проверка…</span>
         <a class="ghost-btn" href="/" target="_blank" rel="noopener">Открыть сайт ↗</a>
         <button class="ghost-btn" id="logoutBtn" type="button" hidden>Выйти</button>
       </div>
@@ -24,9 +23,9 @@
 
     <main>
       <section class="login-card" id="loginCard">
-        <span class="eyebrow">Закрытая зона</span>
-        <h1>Управление сайтом</h1>
-        <p>Добавляйте и редактируйте задачи, акции, проекты и мероприятия. После публикации изменения автоматически попадут в GitHub и затем на основной сайт.</p>
+        <span class="eyebrow">Управление сайтом</span>
+        <h1>Вход</h1>
+        <p>Введите пароль администратора.</p>
         <form id="loginForm">
           <label>Пароль администратора
             <input id="passwordInput" type="password" autocomplete="current-password" required>
@@ -34,10 +33,6 @@
           <button class="primary-btn" type="submit">Войти</button>
           <div class="form-message" id="loginMessage"></div>
         </form>
-        <div class="setup-note" id="setupNote" hidden>
-          <strong>Нужна однократная настройка.</strong>
-          <p>В Vercel необходимо добавить две защищённые переменные: <code>ADMIN_PASSWORD</code> и <code>GITHUB_TOKEN</code>. После этого админка начнёт публиковать изменения.</p>
-        </div>
       </section>
 
       <section class="workspace" id="workspace" hidden>
@@ -47,7 +42,10 @@
               <span class="eyebrow">Контент сайта</span>
               <h2>Карточки</h2>
             </div>
-            <button class="primary-btn compact" id="newItemBtn" type="button">+ Добавить</button>
+            <div class="sidebar-actions">
+              <button class="secondary-btn compact" id="siteSettingsBtn" type="button">Настройки</button>
+              <button class="primary-btn compact" id="newItemBtn" type="button">+ Добавить</button>
+            </div>
           </div>
           <div class="sidebar-search">
             <input id="itemSearch" type="search" placeholder="Найти карточку…">
@@ -244,6 +242,81 @@
                 <span>После публикации Vercel автоматически обновит основной сайт.</span>
               </div>
               <button class="primary-btn" type="submit">Опубликовать изменения</button>
+            </div>
+          </form>
+
+          <form id="siteSettingsForm" hidden>
+            <div class="editor-head">
+              <div>
+                <span class="eyebrow">Оформление и тексты</span>
+                <h1>Настройки сайта</h1>
+              </div>
+              <div class="editor-actions">
+                <button class="secondary-btn" id="settingsPreviewBtn" type="button">Предпросмотр</button>
+                <button class="primary-btn" type="submit">Сохранить</button>
+              </div>
+            </div>
+
+            <div class="form-panel active">
+              <div class="field-grid two">
+                <label>Название сайта
+                  <input name="siteTitle" placeholder="Первые · Кемский округ">
+                </label>
+                <label>Подпись в шапке
+                  <input name="districtLabel" placeholder="Кемский муниципальный округ">
+                </label>
+              </div>
+
+              <label>Надпись над главным заголовком
+                <input name="heroEyebrow" placeholder="Рабочий кабинет первичных организаций">
+              </label>
+
+              <div class="field-grid two">
+                <label>Главный заголовок — первая строка
+                  <input name="heroTitle" placeholder="Всё важное">
+                </label>
+                <label>Главный заголовок — акцент
+                  <input name="heroAccent" placeholder="в одном месте.">
+                </label>
+              </div>
+
+              <label>Краткое описание на первом экране
+                <textarea name="heroLead" rows="3"></textarea>
+              </label>
+
+              <div class="field-grid two">
+                <label>Кнопка 1
+                  <input name="heroPrimary" placeholder="Что сделать сейчас">
+                </label>
+                <label>Кнопка 2
+                  <input name="heroSecondary" placeholder="Открыть календарь">
+                </label>
+              </div>
+
+              <h3 class="settings-group-title">Разделы главной страницы</h3>
+              <div class="field-grid two">
+                <label>Раздел 1 — заголовок<input name="nowTitle"></label>
+                <label>Раздел 1 — подпись<input name="nowSubtitle"></label>
+                <label>Раздел 2 — заголовок<input name="calendarTitle"></label>
+                <label>Раздел 2 — подпись<input name="calendarSubtitle"></label>
+                <label>Раздел 3 — заголовок<input name="projectsTitle"></label>
+                <label>Раздел 3 — подпись<input name="projectsSubtitle"></label>
+                <label>Раздел 4 — заголовок<input name="docsTitle"></label>
+                <label>Раздел 4 — подпись<input name="docsSubtitle"></label>
+              </div>
+
+              <div class="field-grid two">
+                <label>Название архива<input name="archiveTitle"></label>
+                <label>Подпись внизу сайта<input name="footerSubtitle"></label>
+              </div>
+
+              <div class="publish-bar">
+                <div>
+                  <strong id="settingsSaveState">Изменения ещё не сохранены</strong>
+                  <span>После сохранения сайт обновится автоматически.</span>
+                </div>
+                <button class="primary-btn" type="submit">Сохранить настройки</button>
+              </div>
             </div>
           </form>
         </section>
