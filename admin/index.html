@@ -10,7 +10,7 @@
 </head>
 <body>
   <div class="admin-shell">
-    <header class="admin-header">
+    <header class="admin-header" id="adminHeader" hidden>
       <a class="admin-brand" href="/" target="_blank" rel="noopener">
         <img src="/pervye-logo-clean.png" alt="Первые">
         <span>Кемский муниципальный округ</span>
@@ -22,16 +22,14 @@
     </header>
 
     <main>
-      <section class="login-card" id="loginCard">
-        <span class="eyebrow">Управление сайтом</span>
+      <section class="login-card login-minimal" id="loginCard">
+        <img class="login-logo" src="/pervye-logo-clean.png" alt="Первые">
         <h1>Вход</h1>
-        <p>Введите пароль администратора.</p>
         <form id="loginForm">
-          <label>Пароль администратора
-            <input id="passwordInput" type="password" autocomplete="current-password" required>
-          </label>
+          <label class="sr-only" for="passwordInput">Пароль администратора</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Пароль" required autofocus>
           <button class="primary-btn" type="submit">Войти</button>
-          <div class="form-message" id="loginMessage"></div>
+          <div class="form-message" id="loginMessage" aria-live="polite"></div>
         </form>
       </section>
 
