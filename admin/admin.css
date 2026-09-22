@@ -13,3 +13,5 @@
 .sidebar-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .secondary-btn.compact{min-height:36px;padding:7px 10px}
 .settings-group-title{margin:8px 0 0;font-size:15px}
+
+.workspace[hidden],.login-card[hidden],#siteSettingsForm[hidden],#itemForm[hidden],#adminHeader[hidden]{display:none!important}
