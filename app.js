@@ -21,7 +21,10 @@
   const fmtShort=d=>{const x=parseDate(d);return x?x.getDate()+" "+monthShort[x.getMonth()]:"—"};
   const typeLabel={task:"Задача",project:"Проект",action:"Акция",event:"Событие",info:"Информация"};
   const isPublic=i=>i.visible!==false&&i.status!=="draft";
-  const safeUrl=u=>esc(String(u||""));
+  const safeUrl=u=>{
+    const v=String(u||"").trim();
+    return (/^https?:\/\//i.test(v)||/^\/files\//.test(v))?esc(v):"#";
+  };
   const startsInFuture=i=>{const s=parseDate(i.start);return Boolean(s&&s>now)};
   const isOngoing=i=>{
     const s=parseDate(i.start),e=endDate(i);
@@ -246,7 +249,7 @@
   }
 
   function renderDocs(){
-    const docs=D.documents.filter(d=>d.url||d.itemId);
+    const docs=(D.documents||[]).filter(d=>d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))));
     $("#docsList").innerHTML=docs.map(d=>{
       const action=d.itemId
         ? '<button data-open="'+d.itemId+'">Открыть →</button>'
@@ -271,7 +274,7 @@
   }
 
   function openModal(id){
-    const i=items.find(x=>x.id===id); if(!i)return;
+    const i=items.find(x=>x.id===id); if(!i||!isPublic(i))return;
     let detail="";
     if(i.completion){
       const done=Array.isArray(i.completion)?i.completion:[i.completion];
@@ -327,7 +330,7 @@
     const panel=$("#searchPanel");
     if(!q){panel.hidden=true;panel.innerHTML="";return}
     const resItems=items.filter(i=>isPublic(i)&&[i.title,i.short,i.category,...(i.steps||[]),...(i.hashtags||[]),...(i.formats||[])].join(" ").toLowerCase().includes(q)).slice(0,7);
-    const resDocs=D.documents.filter(d=>(d.url||d.itemId)&&[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
+    const resDocs=(D.documents||[]).filter(d=>(d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))))&&[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
     const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
     const docHtml=resDocs.map(d=>d.itemId
       ? '<button class="search-result" data-open="'+d.itemId+'"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></button>'
