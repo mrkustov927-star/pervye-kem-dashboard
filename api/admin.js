@@ -7,6 +7,7 @@ const DATA_PATH = "data.js";
 const ALLOWED_TYPES = new Set(["task","project","action","event","info"]);
 const ALLOWED_PRIORITIES = new Set(["urgent","high","normal"]);
 const ALLOWED_STATUSES = new Set(["draft","new","soon","upcoming","active","done"]);
+const ALLOWED_CALENDAR_KINDS = new Set(["concept","task","event","report","registration"]);
 
 function json(res, status, body) {
   res.status(status);
@@ -99,6 +100,7 @@ function cleanItem(raw) {
   const type = ALLOWED_TYPES.has(raw && raw.type) ? raw.type : "task";
   const priority = ALLOWED_PRIORITIES.has(raw && raw.priority) ? raw.priority : "normal";
   const status = ALLOWED_STATUSES.has(raw && raw.status) ? raw.status : "active";
+  const calendarKind = ALLOWED_CALENDAR_KINDS.has(raw && raw.calendarKind) ? raw.calendarKind : (type === "action" ? "concept" : type === "event" ? "event" : "task");
   const title = cleanString(raw && raw.title, 300);
   if (!title) throw new Error("Укажите название.");
   const idBase = cleanString(raw && raw.id, 90).replace(/[^a-zA-Z0-9_-]/g,"") || slugify(title);
@@ -110,6 +112,7 @@ function cleanItem(raw) {
     start: cleanString(raw.start, 10) || null,
     deadline: cleanString(raw.deadline, 10) || null,
     priority,
+    calendarKind,
     audience: cleanStringArray(raw.audience, 20, 100),
     status,
     category: cleanString(raw.category, 180) || "Другое",
