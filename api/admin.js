@@ -77,6 +77,15 @@ function cleanPublication(v) {
   };
   return Object.values(out).some(x=>Array.isArray(x)?x.length:Boolean(x)) ? out : undefined;
 }
+function cleanCalendarMap(v) {
+  if (!v || typeof v !== "object") return undefined;
+  const out = {};
+  for (const key of ["start","deadline","eventDate","reportDeadline"]) {
+    const val = cleanString(v[key], 40);
+    out[key] = ALLOWED_CALENDAR_KINDS.has(val) ? val : "";
+  }
+  return out;
+}
 function cleanSettings(v) {
   const src = v && typeof v === "object" ? v : {};
   const keys = [
@@ -113,6 +122,7 @@ function cleanItem(raw) {
     deadline: cleanString(raw.deadline, 10) || null,
     priority,
     calendarKind,
+    calendarMap: cleanCalendarMap(raw.calendarMap),
     audience: cleanStringArray(raw.audience, 20, 100),
     status,
     category: cleanString(raw.category, 180) || "Другое",
