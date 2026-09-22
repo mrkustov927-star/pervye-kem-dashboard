@@ -543,6 +543,7 @@
     const item=readForm();
     if(!item.title){toast("Укажите название.");switchTab("basic");return}
     if(!item.short){toast("Добавьте краткое описание для главной.");switchTab("basic");return}
+    if(!getVal("id")) form.elements.id.value=item.id
     if(!item.category){toast("Укажите категорию.");switchTab("basic");return}
     const buttons=$$('button[type="submit"]',form);
     const old=buttons.map(b=>b.textContent);
@@ -626,6 +627,10 @@
     if(!confirm('Удалить карточку «'+(item?item.title:editingOriginalId)+'»?')) return;
     try{
       await api({action:"delete-item",id:editingOriginalId});
+      for(const a of (item&&item.attachments)||[]){
+        if(!a.path) continue;
+        try{await api({action:"delete-file",path:a.path})}catch{}
+      }
       items=items.filter(x=>x.id!==editingOriginalId);
       editingOriginalId=null;
       activeEditor="none";
