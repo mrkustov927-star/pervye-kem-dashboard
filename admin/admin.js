@@ -184,7 +184,7 @@
     const box=$("#attachmentsList");
     if(!box) return;
     const saved=attachments.map((a,n)=>
-      '<div class="attachment-admin-row saved"><span class="attachment-file-icon">↓</span><div><strong>'+esc(a.name)+'</strong><small>'+esc(fileSize(a.size))+' · загружен</small></div><button type="button" class="remove-attachment" data-remove-attachment="'+n+'">Убрать</button></div>'
+      '<div class="attachment-admin-row saved"><span class="attachment-file-icon">↓</span><div><strong>'+esc(a.name)+'</strong><small>'+esc(fileSize(a.size))+' · загружен</small></div><button type="button" class="remove-attachment" data-remove-attachment="'+n+'">Удалить</button></div>'
     ).join("");
     const pending=pendingFiles.map((f,n)=>
       '<div class="attachment-admin-row pending"><span class="attachment-file-icon">↑</span><div><strong>'+esc(f.name)+'</strong><small>'+esc(fileSize(f.size))+' · будет загружен при публикации</small></div><button type="button" class="remove-pending-file" data-remove-pending="'+n+'">Убрать</button></div>'
@@ -432,6 +432,7 @@
     const target=data.itemId?"item":"url";
     const row=document.createElement("div");
     row.className="resource-card";
+    row.dataset.resourceId=data.id||("resource-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6));
     row.innerHTML=
       '<div class="resource-card-head"><strong>Ресурс</strong><div class="resource-order">'+
       '<button type="button" class="move-resource" data-dir="-1" aria-label="Переместить выше">↑</button>'+
