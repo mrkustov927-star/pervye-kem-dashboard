@@ -143,7 +143,7 @@
     $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
     let list=items.filter(i=>isPublic(i)&&!expired(i)&&["action","project","event"].includes(i.type));
     if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter);
-    if(projectFilter==="upcoming") list=list.filter(i=>startsInFuture(i)||["upcoming","soon","new"].includes(i.status));
+    if(projectFilter==="upcoming") list=list.filter(i=>startsInFuture(i)||(!i.start&&["upcoming","soon"].includes(i.status)));
     if(projectFilter==="active") list=list.filter(i=>isOngoing(i)&&!startsInFuture(i));
     list.sort((a,b)=>(parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0)));
     const icons={action:"✦",project:"◇",event:"◉"};
