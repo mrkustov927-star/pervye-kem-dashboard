@@ -115,3 +115,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
 .agenda-mobile-card:has(.calendar-event) .agenda-mobile-copy small{color:#111}
 .agenda-mobile-card:has(.calendar-report) .agenda-mobile-copy small{color:var(--red)}
 .agenda-mobile-card:has(.calendar-registration) .agenda-mobile-copy small{color:var(--blue)}
+
+.attachment-list{display:grid;gap:9px}.attachment-download{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid #dce3ed;border-radius:15px;background:#fafbfd;transition:.18s ease}.attachment-download:hover{border-color:#b8cae7;background:#f4f8ff;transform:translateY(-1px)}.attachment-type{width:48px;height:40px;display:grid;place-items:center;border-radius:11px;background:#edf4ff;color:var(--blue);font-size:9px;font-weight:950}.attachment-copy strong,.attachment-copy small{display:block}.attachment-copy strong{font-size:13px;line-height:1.35;overflow-wrap:anywhere}.attachment-copy small{margin-top:3px;color:var(--muted);font-size:10px}.attachment-arrow{color:var(--red);font-size:11px;font-weight:900;white-space:nowrap}
+@media(max-width:680px){.attachment-download{grid-template-columns:44px 1fr}.attachment-arrow{grid-column:2;justify-self:start}.attachment-type{width:42px;height:38px}}
