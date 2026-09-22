@@ -76,6 +76,18 @@ function cleanPublication(v) {
   };
   return Object.values(out).some(x=>Array.isArray(x)?x.length:Boolean(x)) ? out : undefined;
 }
+function cleanSettings(v) {
+  const src = v && typeof v === "object" ? v : {};
+  const keys = [
+    "siteTitle","districtLabel","heroEyebrow","heroTitle","heroAccent","heroLead",
+    "heroPrimary","heroSecondary","nowTitle","nowSubtitle","calendarTitle",
+    "calendarSubtitle","projectsTitle","projectsSubtitle","docsTitle","docsSubtitle",
+    "archiveTitle","footerSubtitle"
+  ];
+  const out = {};
+  for (const key of keys) out[key] = cleanString(src[key], key === "heroLead" ? 1200 : 300);
+  return out;
+}
 function slugify(s) {
   return cleanString(s,200).toLowerCase()
     .normalize("NFKD")
@@ -186,6 +198,15 @@ module.exports = async function handler(req,res) {
   if (!validSession(token)) return json(res,401,{ok:false,error:"Сессия истекла. Войдите снова."});
 
   try {
+    if (body.action === "save-settings") {
+      const incoming = cleanSettings(body.settings||{});
+      const {data,sha} = await loadData();
+      data.meta = data.meta || {};
+      data.meta.site = incoming;
+      if (incoming.siteTitle) data.meta.title = incoming.siteTitle;
+      const result = await saveData(data,sha,"Обновить настройки сайта");
+      return json(res,200,{ok:true,sha:result.commit && result.commit.sha});
+    }
     if (body.action === "save-item") {
       const incoming = cleanItem(body.item||{});
       const {data,sha} = await loadData();
