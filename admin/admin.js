@@ -469,6 +469,7 @@
       $("#saveState").textContent="Сохранено. Vercel обновляет сайт…";
       renderList();
       toast(result.mode==="created"?"Карточка добавлена":"Карточка обновлена");
+      buttons.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]});
       const live=await waitForLiveVersion(result.updatedAt,n=>{
         $("#saveState").textContent=n<3?"Vercel публикует изменения…":"Проверяем опубликованную версию…";
       });
@@ -494,6 +495,7 @@
       dirty=false;
       $("#settingsSaveState").textContent="Сохранено. Vercel обновляет сайт…";
       toast("Настройки сохранены");
+      buttons.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]});
       const live=await waitForLiveVersion(result.updatedAt,n=>{
         $("#settingsSaveState").textContent=n<3?"Vercel публикует настройки…":"Проверяем опубликованную версию…";
       });
