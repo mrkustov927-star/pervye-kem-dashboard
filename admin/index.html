@@ -41,6 +41,7 @@
               <h2>Карточки</h2>
             </div>
             <div class="sidebar-actions">
+              <button class="secondary-btn compact" id="resourcesBtn" type="button">Ресурсы</button>
               <button class="secondary-btn compact" id="siteSettingsBtn" type="button">Настройки</button>
               <button class="primary-btn compact" id="newItemBtn" type="button">+ Добавить</button>
             </div>
@@ -54,6 +55,12 @@
               <option value="project">Проекты</option>
               <option value="event">События</option>
               <option value="info">Информация</option>
+            </select>
+            <select id="itemPublishFilter" aria-label="Статус публикации">
+              <option value="all">Все статусы</option>
+              <option value="published">Опубликованы</option>
+              <option value="draft">Черновики</option>
+              <option value="hidden">Скрытые</option>
             </select>
           </div>
           <div class="item-list" id="itemList"></div>
@@ -104,7 +111,8 @@
                   </select>
                 </label>
                 <label>Категория
-                  <input name="category" placeholder="Например: Совет Первых" required>
+                  <input name="category" list="categoryOptions" placeholder="Например: Совет Первых" required>
+                  <datalist id="categoryOptions"></datalist>
                 </label>
               </div>
               <label>Название
@@ -169,7 +177,8 @@
                 </div>
               </fieldset>
 
-              <div class="field-grid three">
+              <input name="id" type="hidden">
+              <div class="field-grid two">
                 <label>Приоритет
                   <select name="priority">
                     <option value="normal">Обычный</option>
@@ -186,9 +195,6 @@
                     <option value="done">Завершено</option>
                     <option value="draft">Черновик</option>
                   </select>
-                </label>
-                <label>ID карточки
-                  <input name="id" placeholder="создастся автоматически">
                 </label>
               </div>
 
@@ -380,6 +386,39 @@
                   <span>После сохранения сайт обновится автоматически.</span>
                 </div>
                 <button class="primary-btn" type="submit">Сохранить настройки</button>
+              </div>
+            </div>
+          </form>
+
+          <form id="resourcesForm" hidden>
+            <div class="editor-head">
+              <div class="editor-title-block">
+                <button class="mobile-back-btn" id="resourcesBackToListBtn" type="button">← К списку</button>
+                <span class="eyebrow">Быстрый доступ</span>
+                <h1>Ссылки и документы</h1>
+              </div>
+              <div class="editor-actions">
+                <button class="secondary-btn" id="addResourceBtn" type="button">+ Добавить ресурс</button>
+                <button class="primary-btn" type="submit">Сохранить</button>
+              </div>
+            </div>
+
+            <div class="form-panel active resources-panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Ресурсы на главной странице</h3>
+                  <p>Ссылки, каналы, проекты, курсы и карточки-справочники. Порядок здесь совпадает с порядком на сайте.</p>
+                </div>
+              </div>
+              <div id="resourcesRepeater"></div>
+              <div class="empty-repeater" id="resourcesEmpty">Ресурсов пока нет.</div>
+
+              <div class="publish-bar">
+                <div>
+                  <strong id="resourcesSaveState">Изменения ещё не сохранены</strong>
+                  <span>После сохранения основной сайт обновится автоматически.</span>
+                </div>
+                <button class="primary-btn" type="submit">Сохранить ресурсы</button>
               </div>
             </div>
           </form>
