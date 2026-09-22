@@ -87,6 +87,7 @@
   function showLogin(message=""){
     $("#loginCard").hidden=false;
     $("#workspace").hidden=true;
+    $("#workspace").classList.remove("mobile-editing");
     $("#adminHeader").hidden=true;
     $("#loginMessage").textContent=message;
     activeEditor="none";
@@ -94,6 +95,7 @@
   function showWorkspace(){
     $("#loginCard").hidden=true;
     $("#workspace").hidden=false;
+    $("#workspace").classList.remove("mobile-editing");
     $("#adminHeader").hidden=false;
     $("#logoutBtn").hidden=false;
     renderList();
@@ -113,11 +115,14 @@
       if(q && ![i.title,i.short,i.category].join(" ").toLowerCase().includes(q)) return false;
       return true;
     }).sort(itemSort);
-    $("#itemList").innerHTML=list.map(i=>
-      '<button class="item-row '+(activeEditor==="item"&&editingOriginalId===i.id?"active":"")+'" data-edit="'+esc(i.id)+'" type="button">'+
-      '<span class="item-row-top"><span class="item-row-type">'+esc(typeLabels[i.type]||i.type)+(i.visible===false?" · скрыто":"")+'</span><span class="item-row-date">'+esc(fmtDate(i.deadline||i.eventDate||i.start))+'</span></span>'+
-      '<strong>'+esc(i.title)+'</strong><p>'+esc(i.short||"Без краткого описания")+'</p></button>'
-    ).join("") || '<div class="empty-repeater">Ничего не найдено.</div>';
+    $("#itemList").innerHTML=list.map(i=>{
+      const publishState=i.status==="draft"?"Черновик":(i.visible===false?"Скрыта":"Опубликована");
+      const stateClass=i.status==="draft"?"draft":(i.visible===false?"hidden":"published");
+      return '<button class="item-row '+(activeEditor==="item"&&editingOriginalId===i.id?"active":"")+'" data-edit="'+esc(i.id)+'" type="button">'+
+      '<span class="item-row-top"><span class="item-row-type">'+esc(typeLabels[i.type]||i.type)+'</span><span class="item-row-date">'+esc(fmtDate(i.deadline||i.eventDate||i.start))+'</span></span>'+
+      '<span class="item-row-status '+stateClass+'">'+publishState+'</span>'+
+      '<strong>'+esc(i.title)+'</strong><p>'+esc(i.short||"Без краткого описания")+'</p></button>';
+    }).join("") || '<div class="empty-repeater">Ничего не найдено.</div>';
   }
 
   function setVal(name,value){ const el=form.elements[name]; if(el) el.value=value??""; }
@@ -199,6 +204,31 @@
     })).filter(x=>x.label&&x.url);
   }
 
+  function publicationState(){
+    if(activeEditor!=="item"||!form||form.hidden) return {text:"",cls:""};
+    if(!editingOriginalId) return {text:dirty?"Новая · не опубликована":"Новая карточка",cls:"new"};
+    const status=form.elements.status ? form.elements.status.value : "active";
+    const visible=form.elements.visible ? form.elements.visible.checked : true;
+    if(status==="draft") return {text:dirty?"Черновик · есть изменения":"Черновик · не опубликован",cls:"draft"};
+    if(!visible) return {text:dirty?"Скрыта · есть изменения":"Скрыта с сайта",cls:"hidden"};
+    return {text:dirty?"Опубликована · есть изменения":"Опубликована",cls:dirty?"dirty":"published"};
+  }
+  function updatePublishBadge(){
+    const badge=$("#publishStateBadge");
+    if(!badge) return;
+    const state=publicationState();
+    badge.textContent=state.text||"";
+    badge.className="publish-state-badge "+(state.cls||"");
+  }
+  function enterMobileEditor(){
+    $("#workspace").classList.add("mobile-editing");
+    if(window.innerWidth<=760) window.scrollTo({top:0,behavior:"instant"});
+  }
+  function leaveMobileEditor(){
+    $("#workspace").classList.remove("mobile-editing");
+    if(window.innerWidth<=760) window.scrollTo({top:0,behavior:"instant"});
+  }
+
   function hideEditors(){
     form.hidden=true;
     settingsForm.hidden=true;
@@ -211,6 +241,7 @@
     activeEditor="item";
     editingOriginalId=isNew?null:item.id;
     form.hidden=false;
+    enterMobileEditor();
     $("#editorMode").textContent=isNew?"Новая карточка":"Редактирование";
     $("#editorTitle").textContent=isNew?"Добавление":item.title;
     $("#deleteBtn").hidden=isNew;
@@ -257,6 +288,7 @@
     renderAttachments();
     updateRepeaterEmpty();
     setDirty(false);
+    updatePublishBadge();
     renderList();
     switchTab("basic");
   }
@@ -278,6 +310,12 @@
       start:getVal("start")||null,deadline:getVal("deadline")||null,eventDate:getVal("eventDate")||null,reportDeadline:getVal("reportDeadline")||null,
       priority:getVal("priority")||"normal",
       calendarKind:getVal("calendarKind")||(getVal("type")==="action"?"concept":getVal("type")==="event"?"event":"task"),
+      calendarMap:{
+        start:getVal("calendarStartKind"),
+        deadline:getVal("calendarDeadlineKind"),
+        eventDate:getVal("calendarEventKind"),
+        reportDeadline:getVal("calendarReportKind")
+      },
       audience:$('input[name="audience"]:checked',form).map(x=>x.value),
       status,category:getVal("category")||"Другое",
       badges:badges(getVal("badges")),source:getVal("source"),
@@ -293,7 +331,10 @@
 
   function setDirty(v=true){
     dirty=v;
-    if(activeEditor==="item") $("#saveState").textContent=v?"Есть неопубликованные изменения":"Изменения сохранены";
+    if(activeEditor==="item"){
+      $("#saveState").textContent=v?"Есть неопубликованные изменения":"Изменения сохранены";
+      updatePublishBadge();
+    }
     if(activeEditor==="settings") $("#settingsSaveState").textContent=v?"Есть несохранённые изменения":"Настройки сохранены";
   }
   function switchTab(name){
@@ -306,6 +347,7 @@
     activeEditor="settings";
     editingOriginalId=null;
     settingsForm.hidden=false;
+    enterMobileEditor();
     for(const [key,value] of Object.entries({...defaultSiteSettings,...siteSettings})){
       if(settingsForm.elements[key]) settingsForm.elements[key].value=value||"";
     }
@@ -409,6 +451,7 @@
       $("#editorMode").textContent="Редактирование";
       $("#editorTitle").textContent=item.title;
       setDirty(false);
+      updatePublishBadge();
       $("#saveState").textContent="Опубликовано. Сайт обновляется…";
       renderList();
       toast(result.mode==="created"?"Карточка добавлена":"Карточка обновлена");
@@ -451,6 +494,7 @@
       activeEditor="none";
       form.hidden=true;
       $("#editorEmpty").hidden=false;
+      leaveMobileEditor();
       renderList();
       toast("Карточка удалена");
     }catch(err){ toast(err.message); }
@@ -495,6 +539,12 @@
     if(dirty && !confirm("Есть несохранённые изменения. Перейти к другой карточке без сохранения?")) return;
     const item=items.find(x=>x.id===btn.dataset.edit);
     if(item) fillForm(structuredClone(item),false);
+  });
+  $("#backToListBtn").addEventListener("click",()=>{
+    if(dirty && !confirm("Есть неопубликованные изменения. Вернуться к списку без сохранения?")) return;
+    dirty=false;
+    leaveMobileEditor();
+    renderList();
   });
   $("#itemSearch").addEventListener("input",renderList);
   $("#itemTypeFilter").addEventListener("change",renderList);
