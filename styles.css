@@ -89,3 +89,29 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
 
 .footer-links{display:flex;align-items:center;gap:16px}.admin-entry{color:#8390a4!important;font-size:11px!important;font-weight:700!important}.admin-entry:hover{color:#fff!important}
 @media(max-width:680px){.footer-links{width:100%;justify-content:space-between}.admin-entry{font-size:10px!important}}
+
+/* Calendar thematic rubrics */
+.legend-dot.concept{background:var(--red)}
+.legend-dot.task{background:var(--blue)}
+.legend-dot.event{background:#111}
+.legend-dot.report{background:#fff;border:2px solid var(--red)}
+.legend-dot.registration{background:#fff;border:2px solid var(--blue)}
+.day-event.calendar-concept{border-color:#efc8cc;background:#fff3f4}
+.day-event.calendar-task{border-color:#cfe0fb;background:#f3f7ff}
+.day-event.calendar-event{border-color:#d8dbe1;background:#f5f5f6}
+.day-event.calendar-report{border-color:#efc8cc;border-left:4px solid var(--red);background:#fff}
+.day-event.calendar-registration{border-color:#c7d9f6;border-left:4px solid var(--blue);background:#fff}
+.day-event.calendar-concept span,.agenda-mobile-copy small{color:var(--red)}
+.day-event.calendar-task span{color:var(--blue)}
+.day-event.calendar-event span{color:#111}
+.day-event.calendar-report span{color:var(--red)}
+.day-event.calendar-registration span{color:var(--blue)}
+.agenda-mobile-date.calendar-concept{background:var(--red)}
+.agenda-mobile-date.calendar-task{background:var(--blue)}
+.agenda-mobile-date.calendar-event{background:#111}
+.agenda-mobile-date.calendar-report{background:#fff;color:var(--red);border:2px solid var(--red)}
+.agenda-mobile-date.calendar-registration{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.agenda-mobile-card:has(.calendar-task) .agenda-mobile-copy small{color:var(--blue)}
+.agenda-mobile-card:has(.calendar-event) .agenda-mobile-copy small{color:#111}
+.agenda-mobile-card:has(.calendar-report) .agenda-mobile-copy small{color:var(--red)}
+.agenda-mobile-card:has(.calendar-registration) .agenda-mobile-copy small{color:var(--blue)}
