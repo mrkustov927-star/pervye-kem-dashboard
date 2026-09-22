@@ -273,6 +273,76 @@
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
   }
 
+  function addDaysIso(iso,days=1){
+    const d=parseDate(iso); if(!d) return "";
+    d.setDate(d.getDate()+days);
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function calendarEventFor(i){
+    const date=i.eventDate||i.deadline||i.start;
+    if(!date) return null;
+    const kind=i.eventDate?"event":i.deadline?"deadline":"start";
+    const title=kind==="deadline"?"Дедлайн: "+i.title:i.title;
+    const cardUrl=location.origin+location.pathname+"?card="+encodeURIComponent(i.id);
+    const external=(i.links&&i.links[0]&&/^https?:\/\//i.test(i.links[0].url||""))?i.links[0].url:"";
+    const details=[
+      i.short||"",
+      i.category?("Раздел: "+i.category):"",
+      kind==="deadline"?"Срок выполнения: "+fmt(date):"",
+      "Карточка на сайте: "+cardUrl,
+      external?("Рабочая ссылка: "+external):""
+    ].filter(Boolean).join("\n\n");
+    return {date,title,details,cardUrl};
+  }
+  function googleCalendarUrl(i){
+    const ev=calendarEventFor(i); if(!ev) return "";
+    const start=ev.date.replaceAll("-","");
+    const end=addDaysIso(ev.date,1).replaceAll("-","");
+    const p=new URLSearchParams({
+      action:"TEMPLATE",
+      text:ev.title,
+      dates:start+"/"+end,
+      details:ev.details
+    });
+    return "https://calendar.google.com/calendar/render?"+p.toString();
+  }
+  function icsEscape(v){
+    return String(v||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/;/g,"\\;").replace(/,/g,"\\,");
+  }
+  function downloadIcs(i){
+    const ev=calendarEventFor(i); if(!ev) return;
+    const start=ev.date.replaceAll("-","");
+    const end=addDaysIso(ev.date,1).replaceAll("-","");
+    const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+    const uid=i.id+"@pervye-kem-dashboard";
+    const body=[
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Pervye Kem//Dashboard//RU",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      "UID:"+icsEscape(uid),
+      "DTSTAMP:"+stamp,
+      "DTSTART;VALUE=DATE:"+start,
+      "DTEND;VALUE=DATE:"+end,
+      "SUMMARY:"+icsEscape(ev.title),
+      "DESCRIPTION:"+icsEscape(ev.details),
+      "URL:"+icsEscape(ev.cardUrl),
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+    const blob=new Blob([body],{type:"text/calendar;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=(i.title||"event").replace(/[\\/:*?"<>|]+/g," ").trim().slice(0,80)+".ics";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+
   function openModal(id){
     const i=items.find(x=>x.id===id); if(!i||!isPublic(i))return;
     let detail="";
@@ -309,14 +379,19 @@
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+safeUrl(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
     const audience=audienceText(i);
     const overview='<section class="detail-overview"><div><span>Срок</span><strong>'+esc(deadlineLabel(i))+'</strong></div>'+(i.eventDate?'<div><span>Дата события</span><strong>'+esc(fmt(i.eventDate))+'</strong></div>':"")+(i.reportDeadline?'<div><span>Публикация / отчёт</span><strong>до '+esc(fmt(i.reportDeadline))+'</strong></div>':"")+(audience?'<div><span>Для кого</span><strong>'+esc(audience.replace("Кому: ",""))+'</strong></div>':"")+'</section>';
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p>'+overview+detail;
+    const cal=calendarEventFor(i);
+    const calendarActions=cal?'<section class="calendar-add"><div><span>Не пропустить дату</span><strong>Добавить в свой календарь</strong></div><div class="calendar-add-actions"><a href="'+safeUrl(googleCalendarUrl(i))+'" target="_blank" rel="noopener" class="google-calendar-btn">Google Calendar ↗</a><button type="button" data-apple-calendar="'+i.id+'" class="apple-calendar-btn">Apple Calendar / .ics ↓</button></div></section>':"";
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
     lastFocused=document.activeElement;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
+    const url=new URL(location.href);
+    url.searchParams.set("card",i.id);
+    history.replaceState(null,"",url);
     requestAnimationFrame(()=>$(".modal-close").focus());
   }
 
-  function closeModal(){ const modal=$("#detailModal"); if(!modal.hidden){modal.hidden=true;document.body.style.overflow="";if(lastFocused&&lastFocused.focus)lastFocused.focus();} }
+  function closeModal(){ const modal=$("#detailModal"); if(!modal.hidden){modal.hidden=true;document.body.style.overflow="";const url=new URL(location.href);url.searchParams.delete("card");history.replaceState(null,"",url);if(lastFocused&&lastFocused.focus)lastFocused.focus();} }
   function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("show"),1800); }
 
   async function copyItem(id,hashtags=false){
@@ -352,6 +427,7 @@
     x=e.target.closest("[data-month]"); if(x){calendarMonth=x.dataset.month;renderCalendar();return}
     x=e.target.closest("[data-close-modal]"); if(x){closeModal();return}
     x=e.target.closest("[data-copy-hashtags]"); if(x){copyItem(x.dataset.copyHashtags,true);return}
+    x=e.target.closest("[data-apple-calendar]"); if(x){const item=items.find(i=>i.id===x.dataset.appleCalendar);if(item)downloadIcs(item);return}
     x=e.target.closest("[data-copy]"); if(x){copyItem(x.dataset.copy);return}
     x=e.target.closest("[data-toast]"); if(x){toast(x.dataset.toast);return}
     if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")) $("#searchPanel").hidden=true;
@@ -382,4 +458,6 @@
   renderDocs();
   renderUpdates();
   renderArchive();
+  const deepLinkedCard=new URL(location.href).searchParams.get("card");
+  if(deepLinkedCard) setTimeout(()=>openModal(deepLinkedCard),0);
 })();
