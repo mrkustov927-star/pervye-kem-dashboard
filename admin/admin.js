@@ -202,6 +202,11 @@
     setVal("reportDeadline",item.reportDeadline||"");
     setVal("priority",item.priority||"normal");
     setVal("calendarKind",item.calendarKind||(item.type==="action"?"concept":item.type==="event"?"event":"task"));
+    const cm=item.calendarMap||{};
+    setVal("calendarStartKind",cm.start!==undefined?cm.start:(item.type==="action"?"concept":""));
+    setVal("calendarDeadlineKind",cm.deadline!==undefined?cm.deadline:(item.type==="action"?(item.reportDeadline?"":"report"):(item.type==="event"?"":"task")));
+    setVal("calendarEventKind",cm.eventDate!==undefined?cm.eventDate:(item.eventDate?"event":""));
+    setVal("calendarReportKind",cm.reportDeadline!==undefined?cm.reportDeadline:(item.reportDeadline?"report":""));
     setVal("status",item.status||"active");
     setVal("badges",(item.badges||[]).join(", "));
     setVal("source",item.source||"");
