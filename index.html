@@ -14,7 +14,7 @@
     <div class="wrap header-inner">
       <a class="brand" href="#top" aria-label="Движение Первых · Кемский муниципальный округ">
         <img class="brand-logo" src="pervye-logo-clean.png" alt="Первые" width="337" height="93" />
-        <span class="brand-context">Кемский муниципальный округ</span>
+        <span class="brand-context" id="districtLabel">Кемский муниципальный округ</span>
       </a>
       <nav class="header-links" aria-label="Навигация">
         <a href="#now">Сейчас</a>
@@ -29,9 +29,9 @@
     <section class="intro">
       <div class="wrap intro-grid">
         <div class="hero-copy">
-          <span class="eyebrow">Рабочий кабинет первичных организаций</span>
-          <h1>Всё важное<br><span>в одном месте.</span></h1>
-          <p>Сроки, задачи, акции и документы для первичных организаций Кемского округа.</p>
+          <span class="eyebrow" id="heroEyebrow">Рабочий кабинет первичных организаций</span>
+          <h1><span id="heroTitle">Всё важное</span><br><span id="heroAccent">в одном месте.</span></h1>
+          <p id="heroLead">Сроки, задачи, акции и документы для первичных организаций Кемского округа.</p>
 
           <div class="search-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
@@ -40,8 +40,8 @@
           </div>
 
           <div class="hero-actions">
-            <a class="primary-action" href="#now">Что сделать сейчас</a>
-            <a class="secondary-action" href="#calendar">Открыть календарь</a>
+            <a class="primary-action" id="heroPrimary" href="#now">Что сделать сейчас</a>
+            <a class="secondary-action" id="heroSecondary" href="#calendar">Открыть календарь</a>
           </div>
         </div>
 
@@ -60,7 +60,7 @@
       <div class="wrap">
         <div class="section-head light">
           <div><span class="section-number red">01</span><h2 id="now-title">Что требует внимания</h2></div>
-          <p>Ближайшие задачи и дедлайны</p>
+          <p id="nowSubtitle">Ближайшие задачи и дедлайны</p>
         </div>
         <div class="filters dark-filters" id="taskFilters"></div>
         <div class="now-grid" id="taskList"></div>
@@ -71,7 +71,7 @@
       <div class="wrap">
         <div class="section-head">
           <div><span class="section-number blue">02</span><h2 id="calendar-title">Календарь Первых</h2></div>
-          <p>Сентябрь — ноябрь 2026</p>
+          <p id="calendarSubtitle">Сентябрь — ноябрь 2026</p>
         </div>
         <div class="calendar-toolbar">
           <span>Нажмите на событие — откроется полная инструкция.</span>
@@ -89,7 +89,7 @@
       <div class="wrap">
         <div class="section-head">
           <div><span class="section-number red">03</span><h2 id="projects-title">Акции и проекты</h2></div>
-          <p>Идёт сейчас и впереди</p>
+          <p id="projectsSubtitle">Идёт сейчас и впереди</p>
         </div>
         <div class="filters" id="projectFilters"></div>
         <div class="project-grid" id="projectList"></div>
@@ -100,7 +100,7 @@
       <div class="wrap">
         <div class="section-head">
           <div><span class="section-number blue">04</span><h2 id="docs-title">Ссылки и документы</h2></div>
-          <p>Всё, что нужно открыть повторно</p>
+          <p id="docsSubtitle">Всё, что нужно открыть повторно</p>
         </div>
         <div class="docs-grid" id="docsList"></div>
       </div>
@@ -109,7 +109,7 @@
     <section class="archive-section" id="archive">
       <div class="wrap">
         <details class="archive-box">
-          <summary>Архив завершённых задач и акций <span>+</span></summary>
+          <summary><span id="archiveTitle">Архив завершённых задач и акций</span> <span>+</span></summary>
           <div class="archive-grid" id="archiveList"></div>
         </details>
       </div>
@@ -118,8 +118,8 @@
 
   <footer class="footer">
     <div class="wrap footer-inner">
-      <div><b>Первые · Кемский округ</b><span>Рабочий информационный кабинет первичных организаций</span></div>
-      <a href="#top">Наверх ↑</a>
+      <div><b id="footerSiteTitle">Первые · Кемский округ</b><span id="footerSubtitle">Рабочий информационный кабинет первичных организаций</span></div>
+      <div class="footer-links"><a href="/admin" class="admin-entry">Вход для администратора</a><a href="#top">Наверх ↑</a></div>
     </div>
   </footer>
 
