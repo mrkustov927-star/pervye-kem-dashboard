@@ -211,7 +211,11 @@ function stable(v) {
 }
 function pushUpdate(data,title,text) {
   data.updates = Array.isArray(data.updates) ? data.updates : [];
-  data.updates.unshift({date:new Date().toISOString(),title:cleanString(title,260),text:cleanString(text,1200)});
+  const entry={date:new Date().toISOString(),title:cleanString(title,260),text:cleanString(text,1200)};
+  const first=data.updates[0];
+  const firstTime=first&&first.date?new Date(first.date).getTime():0;
+  if(first&&first.title===entry.title&&Date.now()-firstTime<10*60*1000) data.updates[0]=entry;
+  else data.updates.unshift(entry);
   data.updates = data.updates.slice(0,30);
 }
 function describeChanges(before,after) {
