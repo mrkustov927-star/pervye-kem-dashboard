@@ -150,10 +150,39 @@
     const first=new Date(y,m-1,1);
     const start=(first.getDay()+6)%7;
     const events=[];
-    items.filter(i=>i.visible!==false).forEach(i=>["start","deadline","eventDate","reportDeadline"].forEach(k=>{
-      if(i[k]&&i[k].startsWith(calendarMonth)) events.push({date:i[k],item:i,kind:k});
-    }));
-    events.sort((a,b)=>parseDate(a.date)-parseDate(b.date));
+    const labels={concept:"Концепция",task:"Задача",event:"Мероприятие",report:"Отчёт",registration:"Регистрация"};
+    const defaultKind=i=>i.calendarKind||(i.type==="action"?"concept":i.type==="event"?"event":"task");
+    const push=(date,item,kind)=>{
+      if(date&&date.startsWith(calendarMonth)) events.push({date,item,kind,label:labels[kind]||"Задача"});
+    };
+
+    items.filter(i=>i.visible!==false).forEach(i=>{
+      const kind=defaultKind(i);
+      if(kind==="concept"){
+        push(i.start,i,"concept");
+        push(i.reportDeadline||i.deadline,i,"report");
+        if(i.eventDate) push(i.eventDate,i,"event");
+        return;
+      }
+      if(kind==="registration"){
+        push(i.deadline,i,"registration");
+        if(i.eventDate) push(i.eventDate,i,"event");
+        if(i.reportDeadline) push(i.reportDeadline,i,"report");
+        return;
+      }
+      if(kind==="event"){
+        push(i.eventDate||i.start||i.deadline,i,"event");
+        if(i.reportDeadline) push(i.reportDeadline,i,"report");
+        return;
+      }
+      push(i.deadline,i,"task");
+      if(i.eventDate) push(i.eventDate,i,"event");
+      if(i.reportDeadline) push(i.reportDeadline,i,"report");
+    });
+
+    const order={concept:0,registration:1,event:2,task:3,report:4};
+    events.sort((a,b)=>parseDate(a.date)-parseDate(b.date)||(order[a.kind]??9)-(order[b.kind]??9));
+
     let html=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>'<div class="calendar-weekday">'+x+'</div>').join("");
     for(let z=0;z<42;z++){
       const n=z-start+1;
@@ -164,12 +193,14 @@
       const allDayEvents=events.filter(e=>e.date===iso);
       const dayEvents=allDayEvents.slice(0,3);
       const more=allDayEvents.length>3?'<span class="day-more">+'+(allDayEvents.length-3)+' ещё</span>':"";
-      html+='<div class="calendar-day '+(outside?"outside ":"")+(iso===todayIso?"today":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+dayEvents.map(e=>{const label=e.kind==="deadline"?"Дедлайн":e.kind==="reportDeadline"?"Отчёт":e.kind==="eventDate"?"Событие":"Старт";return '<button class="day-event '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":e.kind==="eventDate"?"event":"start")+'" data-open="'+e.item.id+'"><span>'+label+'</span>'+esc(e.item.title)+'</button>'}).join("")+more+'</div></div>';
+      html+='<div class="calendar-day '+(outside?"outside ":"")+(iso===todayIso?"today":"")+'"><span class="day-num">'+d.getDate()+'</span><div class="day-events">'+
+        dayEvents.map(e=>'<button class="day-event calendar-'+e.kind+'" data-open="'+e.item.id+'"><span>'+esc(e.label)+'</span>'+esc(e.item.title)+'</button>').join("")+
+        more+'</div></div>';
     }
     $("#calendarGrid").innerHTML=html;
     $("#calendarAgenda").innerHTML=events.map(e=>{
       const d=parseDate(e.date);
-      return '<button class="agenda-mobile-card" data-open="'+e.item.id+'"><span class="agenda-mobile-date '+(e.kind==="deadline"||e.kind==="reportDeadline"?"urgent":"")+'"><b>'+d.getDate()+'</b><small>'+monthShort[d.getMonth()]+'</small></span><span class="agenda-mobile-copy"><small>'+esc(e.item.category)+'</small><b>'+esc(e.item.title)+'</b><span>'+esc(e.kind==="deadline"?"Дедлайн":e.kind==="reportDeadline"?"Отчёт":e.kind==="eventDate"?"Событие":"Старт")+'</span></span></button>';
+      return '<button class="agenda-mobile-card" data-open="'+e.item.id+'"><span class="agenda-mobile-date calendar-'+e.kind+'"><b>'+d.getDate()+'</b><small>'+monthShort[d.getMonth()]+'</small></span><span class="agenda-mobile-copy"><small>'+esc(e.label)+'</small><b>'+esc(e.item.title)+'</b><span>'+esc(e.item.category)+'</span></span></button>';
     }).join("");
   }
 
