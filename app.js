@@ -9,7 +9,7 @@
   let taskFilter="all";
   let projectFilter="all";
   const currentYm=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  let calendarMonth=["2026-09","2026-10","2026-11"].includes(currentYm)?currentYm:"2026-09";
+  let calendarMonth=currentYm;
   let lastFocused=null;
 
   const parseDate=d=>d?new Date(d+"T12:00:00+03:00"):null;
@@ -312,7 +312,7 @@
     const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
     const docHtml=resDocs.map(d=>d.itemId
       ? '<button class="search-result" data-open="'+d.itemId+'"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></button>'
-      : '<a class="search-result" href="'+d.url+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></a>').join("");
+      : '<a class="search-result" href="'+safeUrl(d.url)+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></a>').join("");
     panel.innerHTML='<strong>Результаты поиска</strong><div class="search-results">'+(itemHtml+docHtml||'<span>Ничего не найдено</span>')+'</div>';
     panel.hidden=false;
   }
