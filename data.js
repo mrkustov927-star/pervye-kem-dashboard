@@ -1,7 +1,7 @@
 window.DASHBOARD_DATA = {
   "meta": {
     "title": "Первые · Кемский округ",
-    "updatedAt": "2026-09-22T11:37:44.892Z",
+    "updatedAt": "2026-09-22T11:40:18.714Z",
     "editorialNote": "Даты и формулировки проверены по официальным рекомендациям и рабочей переписке первичных организаций. Если срок в источнике не указан, карточка не получает выдуманный дедлайн."
   },
   "organizations": [
@@ -79,6 +79,20 @@ window.DASHBOARD_DATA = {
           "path": "files/council-elections-2026/1790074862106-53ebf366f039.docx",
           "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           "size": 29011
+        },
+        {
+          "name": "Избирательный_бюллетень_Кемский_МО.pptx",
+          "url": "/files/council-elections-2026/1790077212725-73a6783e07c8.pptx",
+          "path": "files/council-elections-2026/1790077212725-73a6783e07c8.pptx",
+          "type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 136235
+        },
+        {
+          "name": "Избирательный_бюллетень_Кемский_МО.png",
+          "url": "/files/council-elections-2026/1790077217017-722705d6bfc3.png",
+          "path": "files/council-elections-2026/1790077217017-722705d6bfc3.png",
+          "type": "image/png",
+          "size": 1100381
         }
       ],
       "copyText": "До четверга провести выборы в Совет Первых и прислать заполненный протокол. При необходимости можно обратиться за помощью с заполнением."
@@ -1119,6 +1133,11 @@ window.DASHBOARD_DATA = {
     }
   ],
   "updates": [
+    {
+      "date": "2026-09-22T11:40:18.714Z",
+      "title": "Обновлено: Провести выборы в Совет Первых",
+      "text": "Уточнены: ссылки и материалы."
+    },
     {
       "date": "2026-09-22T11:37:00.514Z",
       "title": "Добавлено: Подведение итогов работы первичных отделений",
