@@ -257,7 +257,6 @@
     setVal("eventDate",item.eventDate||"");
     setVal("reportDeadline",item.reportDeadline||"");
     setVal("priority",item.priority||"normal");
-    setVal("calendarKind",item.calendarKind||(item.type==="action"?"concept":item.type==="event"?"event":"task"));
     const cm=item.calendarMap||{};
     setVal("calendarStartKind",cm.start!==undefined?cm.start:(item.type==="action"?"concept":""));
     setVal("calendarDeadlineKind",cm.deadline!==undefined?cm.deadline:(item.type==="action"?(item.reportDeadline?"":"report"):(item.type==="event"?"":"task")));
@@ -309,7 +308,7 @@
       id,type:getVal("type")||"task",title,short:getVal("short"),
       start:getVal("start")||null,deadline:getVal("deadline")||null,eventDate:getVal("eventDate")||null,reportDeadline:getVal("reportDeadline")||null,
       priority:getVal("priority")||"normal",
-      calendarKind:getVal("calendarKind")||(getVal("type")==="action"?"concept":getVal("type")==="event"?"event":"task"),
+      calendarKind:(getVal("type")==="action"?"concept":getVal("type")==="event"?"event":"task"),
       calendarMap:{
         start:getVal("calendarStartKind"),
         deadline:getVal("calendarDeadlineKind"),
@@ -542,6 +541,12 @@
   });
   $("#backToListBtn").addEventListener("click",()=>{
     if(dirty && !confirm("Есть неопубликованные изменения. Вернуться к списку без сохранения?")) return;
+    dirty=false;
+    leaveMobileEditor();
+    renderList();
+  });
+  $("#settingsBackToListBtn").addEventListener("click",()=>{
+    if(dirty && !confirm("Есть несохранённые изменения. Вернуться к списку без сохранения?")) return;
     dirty=false;
     leaveMobileEditor();
     renderList();
