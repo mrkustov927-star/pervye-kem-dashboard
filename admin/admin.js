@@ -5,6 +5,8 @@
   let editingOriginalId = null;
   let dirty = false;
   let activeEditor = "none";
+  let attachments = [];
+  let pendingFiles = [];
 
   const rootNode = r => typeof r === "string" ? document.querySelector(r) : r;
   const $ = (s,r=document)=>rootNode(r).querySelector(s);
@@ -124,12 +126,35 @@
     $("#formatsRepeater").innerHTML="";
     $("#linksRepeater").innerHTML="";
     $("#materialsRepeater").innerHTML="";
+    attachments=[];
+    pendingFiles=[];
+    if($("#fileInput")) $("#fileInput").value="";
+    renderAttachments();
     updateRepeaterEmpty();
   }
   function updateRepeaterEmpty(){
     $("#formatsEmpty").hidden=Boolean($("#formatsRepeater").children.length);
     $("#linksEmpty").hidden=Boolean($("#linksRepeater").children.length);
     $("#materialsEmpty").hidden=Boolean($("#materialsRepeater").children.length);
+    if($("#attachmentsEmpty")) $("#attachmentsEmpty").hidden=Boolean(attachments.length||pendingFiles.length);
+  }
+  function fileSize(bytes){
+    const n=Number(bytes)||0;
+    if(n<1024) return n+" Б";
+    if(n<1048576) return Math.round(n/1024)+" КБ";
+    return (n/1048576).toFixed(1).replace(".0","")+" МБ";
+  }
+  function renderAttachments(){
+    const box=$("#attachmentsList");
+    if(!box) return;
+    const saved=attachments.map((a,n)=>
+      '<div class="attachment-admin-row saved"><span class="attachment-file-icon">↓</span><div><strong>'+esc(a.name)+'</strong><small>'+esc(fileSize(a.size))+' · загружен</small></div><button type="button" class="remove-attachment" data-remove-attachment="'+n+'">Убрать</button></div>'
+    ).join("");
+    const pending=pendingFiles.map((f,n)=>
+      '<div class="attachment-admin-row pending"><span class="attachment-file-icon">↑</span><div><strong>'+esc(f.name)+'</strong><small>'+esc(fileSize(f.size))+' · будет загружен при публикации</small></div><button type="button" class="remove-pending-file" data-remove-pending="'+n+'">Убрать</button></div>'
+    ).join("");
+    box.innerHTML=saved+pending;
+    updateRepeaterEmpty();
   }
   function addFormat(data={}){
     const wrap=document.createElement("div");
@@ -227,6 +252,9 @@
     if(!(item.formatDetails||[]).length && (item.formats||[]).length) item.formats.forEach(name=>addFormat({name}));
     (item.links||[]).forEach(x=>addLink("link",x));
     (item.materials||[]).forEach(x=>addLink("material",x));
+    attachments=structuredClone(item.attachments||[]);
+    pendingFiles=[];
+    renderAttachments();
     updateRepeaterEmpty();
     setDirty(false);
     renderList();
@@ -258,6 +286,7 @@
       formats:formatDetails.map(x=>x.name),formatDetails,
       hashtags:tags(getVal("hashtags")),hashtagsByOrg:lines(getVal("hashtagsByOrg")),
       notes:lines(getVal("notes")),links:collectLinks($("#linksRepeater")),materials:collectLinks($("#materialsRepeater")),
+      attachments:structuredClone(attachments),
       copyText:getVal("copyText"),...(hasPub?{publication:pub}:{})
     };
   }
@@ -292,6 +321,30 @@
     return out;
   }
 
+  function fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||"").split(",").pop()||"");
+      reader.onerror=()=>reject(new Error("Не удалось прочитать файл "+file.name));
+      reader.readAsDataURL(file);
+    });
+  }
+  async function uploadPendingFiles(itemId){
+    if(!pendingFiles.length) return [];
+    const uploaded=[];
+    for(let n=0;n<pendingFiles.length;n++){
+      const file=pendingFiles[n];
+      $("#saveState").textContent="Загружаем файл "+(n+1)+" из "+pendingFiles.length+": "+file.name;
+      const data=await fileToBase64(file);
+      const result=await api({action:"upload-file",itemId,file:{name:file.name,type:file.type,data}});
+      uploaded.push(result.attachment);
+    }
+    attachments=[...attachments,...uploaded];
+    pendingFiles=[];
+    renderAttachments();
+    return uploaded;
+  }
+
   function openPreview(html){
     $("#previewContent").innerHTML=html;
     $("#previewModal").hidden=false;
@@ -309,6 +362,7 @@
     if(i.publication) sections.push('<section class="preview-section"><h3>Публикация и отчётность</h3><p><strong>'+esc(i.publication.deadline||"")+'</strong></p><p>'+esc(i.publication.where||"")+'</p><p>'+esc(i.publication.report||"")+'</p><ul>'+i.publication.requirements.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></section>');
     if(i.notes.length) sections.push('<section class="preview-section"><h3>Важно</h3>'+i.notes.map(x=>'<p>'+esc(x)+'</p>').join("")+'</section>');
     if(i.hashtags.length) sections.push('<section class="preview-section"><h3>Хештеги</h3><p>'+i.hashtags.map(esc).join(" ")+'</p></section>');
+    if((i.attachments||[]).length||pendingFiles.length) sections.push('<section class="preview-section"><h3>Файлы</h3><ul>'+[...(i.attachments||[]).map(x=>x.name),...pendingFiles.map(x=>x.name+" (ожидает загрузки)")].map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></section>');
     openPreview('<div class="preview-meta">'+meta+'</div><h1 class="preview-title">'+esc(i.title)+'</h1><p class="preview-summary">'+esc(i.short)+'</p>'+sections.join(""));
   }
   function previewSettings(){
@@ -337,6 +391,10 @@
     buttons.forEach(b=>{b.disabled=true;b.textContent="Публикуем…"});
     $("#saveState").textContent="Сохраняем…";
     try{
+      if(pendingFiles.length){
+        await uploadPendingFiles(item.id);
+        item.attachments=structuredClone(attachments);
+      }
       const result=await api({action:"save-item",item});
       const oldIdx=editingOriginalId?items.findIndex(x=>x.id===editingOriginalId):-1;
       const sameIdx=items.findIndex(x=>x.id===item.id);
@@ -444,9 +502,25 @@
   $("#addFormatBtn").addEventListener("click",()=>{addFormat();setDirty()});
   $("#addLinkBtn").addEventListener("click",()=>{addLink("link");setDirty()});
   $("#addMaterialBtn").addEventListener("click",()=>{addLink("material");setDirty()});
+  $("#fileInput").addEventListener("change",e=>{
+    const allowed=["pdf","doc","docx","xls","xlsx","ppt","pptx","png","jpg","jpeg","zip","rar","odt","ods"];
+    for(const file of [...e.target.files]){
+      const ext=(file.name.split(".").pop()||"").toLowerCase();
+      if(!allowed.includes(ext)){toast("Файл «"+file.name+"» не поддерживается");continue}
+      if(file.size>2621440){toast("«"+file.name+"» больше 2,5 МБ");continue}
+      pendingFiles.push(file);
+    }
+    e.target.value="";
+    renderAttachments();
+    setDirty();
+  });
   document.addEventListener("click",e=>{
     const rm=e.target.closest(".remove-repeat");
     if(rm){rm.closest(".repeat-card,.link-row").remove();updateRepeaterEmpty();setDirty();return}
+    const savedFile=e.target.closest("[data-remove-attachment]");
+    if(savedFile){attachments.splice(Number(savedFile.dataset.removeAttachment),1);renderAttachments();setDirty();return}
+    const pendingFile=e.target.closest("[data-remove-pending]");
+    if(pendingFile){pendingFiles.splice(Number(pendingFile.dataset.removePending),1);renderAttachments();setDirty();return}
     if(e.target.closest("[data-close-preview]")){$("#previewModal").hidden=true;document.body.style.overflow="";}
   });
   form.addEventListener("input",()=>setDirty());
