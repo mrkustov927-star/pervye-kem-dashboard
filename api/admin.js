@@ -262,7 +262,7 @@ module.exports = async function handler(req,res) {
       data.meta.site = incoming;
       if (incoming.siteTitle) data.meta.title = incoming.siteTitle;
       const result = await saveData(data,sha,"Обновить настройки сайта");
-      return json(res,200,{ok:true,sha:result.commit && result.commit.sha});
+      return json(res,200,{ok:true,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
     if (body.action === "save-item") {
       const incoming = cleanItem(body.item||{});
@@ -272,7 +272,7 @@ module.exports = async function handler(req,res) {
       if (idx >= 0) data.items[idx] = incoming;
       else data.items.push(incoming);
       const result = await saveData(data,sha,(idx>=0?"Обновить: ":"Добавить: ")+incoming.title);
-      return json(res,200,{ok:true,mode:idx>=0?"updated":"created",sha:result.commit && result.commit.sha});
+      return json(res,200,{ok:true,mode:idx>=0?"updated":"created",sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
     if (body.action === "delete-item") {
       const id = cleanString(body.id,90).replace(/[^a-zA-Z0-9_-]/g,"");
@@ -282,7 +282,7 @@ module.exports = async function handler(req,res) {
       data.items = (data.items||[]).filter(x=>x.id!==id);
       if (data.items.length===before) throw new Error("Карточка не найдена.");
       const result = await saveData(data,sha,"Удалить карточку: "+id);
-      return json(res,200,{ok:true,sha:result.commit && result.commit.sha});
+      return json(res,200,{ok:true,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
     }
     return json(res,400,{ok:false,error:"Неизвестное действие."});
   } catch (e) {
