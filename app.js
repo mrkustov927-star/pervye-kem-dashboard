@@ -167,7 +167,7 @@
   function renderCalendar(){
     const monthNom=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     const monthSet=new Set([currentYm]);
-    items.filter(isPublic).forEach(i=>[i.start,i.deadline,i.eventDate,i.reportDeadline].filter(Boolean).forEach(d=>{
+    items.filter(isPublic).forEach(i=>[i.start,i.deadline,i.eventDate].filter(Boolean).forEach(d=>{
       const key=d.slice(0,7);
       if(key>=currentYm) monthSet.add(key);
     }));
@@ -190,7 +190,7 @@
     const first=new Date(y,m-1,1);
     const start=(first.getDay()+6)%7;
     const events=[];
-    const labels={concept:"Концепция",task:"Задача",event:"Мероприятие",report:"Отчёт",registration:"Регистрация"};
+    const labels={concept:"Концепция",task:"Задача",event:"Мероприятие",registration:"Регистрация"};
     const defaultKind=i=>i.calendarKind||(i.type==="action"?"concept":i.type==="event"?"event":"task");
     const push=(date,item,kind)=>{
       if(!date||!kind||!date.startsWith(calendarMonth)) return;
@@ -203,38 +203,28 @@
         push(i.start,i,i.calendarMap.start);
         push(i.deadline,i,i.calendarMap.deadline);
         push(i.eventDate,i,i.calendarMap.eventDate);
-        push(i.reportDeadline,i,i.calendarMap.reportDeadline);
         return;
       }
       const kind=defaultKind(i);
       if(kind==="concept"){
         push(i.start,i,"concept");
-        push(i.reportDeadline||i.deadline,i,"report");
         if(i.eventDate) push(i.eventDate,i,"event");
         return;
       }
       if(kind==="registration"){
         push(i.deadline,i,"registration");
         if(i.eventDate) push(i.eventDate,i,"event");
-        if(i.reportDeadline) push(i.reportDeadline,i,"report");
         return;
       }
       if(kind==="event"){
         push(i.eventDate||i.start||i.deadline,i,"event");
-        if(i.reportDeadline) push(i.reportDeadline,i,"report");
-        return;
-      }
-      if(kind==="report"){
-        push(i.reportDeadline||i.deadline,i,"report");
-        if(i.eventDate) push(i.eventDate,i,"event");
         return;
       }
       push(i.deadline,i,"task");
       if(i.eventDate) push(i.eventDate,i,"event");
-      if(i.reportDeadline) push(i.reportDeadline,i,"report");
     });
 
-    const order={concept:0,registration:1,event:2,task:3,report:4};
+    const order={concept:0,registration:1,event:2,task:3};
     events.sort((a,b)=>parseDate(a.date)-parseDate(b.date)||(order[a.kind]??9)-(order[b.kind]??9));
 
     let html=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>'<div class="calendar-weekday">'+x+'</div>').join("");
