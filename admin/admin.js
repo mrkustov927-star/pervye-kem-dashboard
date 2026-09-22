@@ -315,7 +315,7 @@
         eventDate:getVal("calendarEventKind"),
         reportDeadline:getVal("calendarReportKind")
       },
-      audience:$('input[name="audience"]:checked',form).map(x=>x.value),
+      audience:$$('input[name="audience"]:checked',form).map(x=>x.value),
       status,category:getVal("category")||"Другое",
       badges:badges(getVal("badges")),source:getVal("source"),
       visible:status==="draft"?false:form.elements.visible.checked,
