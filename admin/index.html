@@ -132,7 +132,7 @@
 
               <fieldset class="calendar-display-settings">
                 <legend>Как показывать даты в календаре</legend>
-                <p class="field-help">Тип карточки и подпись в календаре — разные вещи. Например, карточка может быть «Акция», а её дата в календаре — «Концепция» или «Отчёт».</p>
+                <p class="field-help">Тип карточки и подпись в календаре — разные вещи. Например, карточка может быть «Акция», а её дата в календаре — «Концепция». Срок отчёта сохраняется внутри карточки и отдельно в календаре не показывается.</p>
                 <div class="field-grid four">
                   <label>Дата начала
                     <select name="calendarStartKind">
@@ -141,7 +141,6 @@
                       <option value="task">Задача</option>
                       <option value="event">Мероприятие</option>
                       <option value="registration">Регистрация</option>
-                      <option value="report">Отчёт</option>
                     </select>
                   </label>
                   <label>Дедлайн
@@ -151,7 +150,6 @@
                       <option value="task">Задача</option>
                       <option value="event">Мероприятие</option>
                       <option value="registration">Регистрация</option>
-                      <option value="report">Отчёт</option>
                     </select>
                   </label>
                   <label>Дата события
@@ -161,19 +159,12 @@
                       <option value="task">Задача</option>
                       <option value="event">Мероприятие</option>
                       <option value="registration">Регистрация</option>
-                      <option value="report">Отчёт</option>
                     </select>
                   </label>
-                  <label>Срок отчёта
-                    <select name="calendarReportKind">
-                      <option value="">Не показывать</option>
-                      <option value="concept">Концепция</option>
-                      <option value="task">Задача</option>
-                      <option value="event">Мероприятие</option>
-                      <option value="registration">Регистрация</option>
-                      <option value="report">Отчёт</option>
-                    </select>
-                  </label>
+                  <div class="calendar-report-note">
+                    <strong>Срок отчёта</strong>
+                    <span>Хранится в карточке, но отдельным событием календаря не выводится.</span>
+                  </div>
                 </div>
               </fieldset>
 
