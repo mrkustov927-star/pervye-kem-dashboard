@@ -154,7 +154,10 @@
   function renderCalendar(){
     const monthNom=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     const monthSet=new Set([currentYm]);
-    items.filter(isPublic).forEach(i=>[i.start,i.deadline,i.eventDate,i.reportDeadline].filter(Boolean).forEach(d=>monthSet.add(d.slice(0,7))));
+    items.filter(isPublic).forEach(i=>[i.start,i.deadline,i.eventDate,i.reportDeadline].filter(Boolean).forEach(d=>{
+      const key=d.slice(0,7);
+      if(key>=currentYm) monthSet.add(key);
+    }));
     const monthKeys=[...monthSet].sort();
     if(!monthKeys.includes(calendarMonth)) calendarMonth=monthKeys.find(x=>x>=currentYm)||monthKeys[0];
     const years=new Set(monthKeys.map(x=>x.slice(0,4)));
@@ -164,6 +167,12 @@
       return [key,label];
     });
     $("#calendarMonths").innerHTML=months.map(m=>'<button class="'+(calendarMonth===m[0]?"active":"")+'" data-month="'+m[0]+'">'+m[1]+'</button>').join("");
+    if(!(D.meta&&D.meta.site&&D.meta.site.calendarSubtitle) && monthKeys.length){
+      const firstKey=monthKeys[0].split("-").map(Number), lastKey=monthKeys[monthKeys.length-1].split("-").map(Number);
+      const sameYear=firstKey[0]===lastKey[0];
+      const label=monthNom[firstKey[1]-1]+(monthKeys.length>1?" — "+monthNom[lastKey[1]-1]:"")+(sameYear?" "+firstKey[0]:" "+firstKey[0]+" — "+lastKey[0]);
+      const subtitle=$("#calendarSubtitle"); if(subtitle) subtitle.textContent=label;
+    }
     const ym=calendarMonth.split("-").map(Number),y=ym[0],m=ym[1];
     const first=new Date(y,m-1,1);
     const start=(first.getDay()+6)%7;
