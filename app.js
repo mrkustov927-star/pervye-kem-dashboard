@@ -255,6 +255,16 @@
     }).join("");
   }
 
+  function renderUpdates(){
+    const list=Array.isArray(D.updates)?[...D.updates]:[];
+    list.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    $("#updatesList").innerHTML=list.slice(0,5).map(u=>{
+      const d=u.date?new Date(u.date):null;
+      const date=d&&!Number.isNaN(d.getTime())?d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",timeZone:"Europe/Moscow"}):"";
+      return '<article class="update-card"><span>'+esc(date)+'</span><div><strong>'+esc(u.title)+'</strong><p>'+esc(u.text)+'</p></div></article>';
+    }).join("")||'<div class="empty">Пока нет новых изменений.</div>';
+  }
+
   function renderArchive(){
     const list=items.filter(i=>isPublic(i)&&expired(i)).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
@@ -352,5 +362,6 @@
   renderCalendar();
   renderProjects();
   renderDocs();
+  renderUpdates();
   renderArchive();
 })();
