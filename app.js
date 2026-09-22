@@ -175,6 +175,11 @@
         if(i.reportDeadline) push(i.reportDeadline,i,"report");
         return;
       }
+      if(kind==="report"){
+        push(i.reportDeadline||i.deadline,i,"report");
+        if(i.eventDate) push(i.eventDate,i,"event");
+        return;
+      }
       push(i.deadline,i,"task");
       if(i.eventDate) push(i.eventDate,i,"event");
       if(i.reportDeadline) push(i.reportDeadline,i,"report");
