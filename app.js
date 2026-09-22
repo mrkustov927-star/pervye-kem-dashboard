@@ -370,7 +370,15 @@
   $("#globalSearch").oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#globalSearch").focus()}
-    if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow=""}
+    if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow="";return}
+    const modal=$("#detailModal");
+    if(e.key==="Tab"&&!modal.hidden){
+      const focusables=$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary',modal).filter(x=>x.offsetParent!==null);
+      if(!focusables.length)return;
+      const first=focusables[0],last=focusables[focusables.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+    }
   });
 
   const shortcut=$("#searchShortcut");
