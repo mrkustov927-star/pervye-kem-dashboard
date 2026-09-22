@@ -201,6 +201,7 @@
     setVal("eventDate",item.eventDate||"");
     setVal("reportDeadline",item.reportDeadline||"");
     setVal("priority",item.priority||"normal");
+    setVal("calendarKind",item.calendarKind||(item.type==="action"?"concept":item.type==="event"?"event":"task"));
     setVal("status",item.status||"active");
     setVal("badges",(item.badges||[]).join(", "));
     setVal("source",item.source||"");
@@ -243,7 +244,8 @@
       id,type:getVal("type")||"task",title,short:getVal("short"),
       start:getVal("start")||null,deadline:getVal("deadline")||null,eventDate:getVal("eventDate")||null,reportDeadline:getVal("reportDeadline")||null,
       priority:getVal("priority")||"normal",
-      audience:$$('input[name="audience"]:checked',form).map(x=>x.value),
+      calendarKind:getVal("calendarKind")||(getVal("type")==="action"?"concept":getVal("type")==="event"?"event":"task"),
+      audience:$('input[name="audience"]:checked',form).map(x=>x.value),
       status,category:getVal("category")||"Другое",
       badges:badges(getVal("badges")),source:getVal("source"),
       visible:status==="draft"?false:form.elements.visible.checked,
