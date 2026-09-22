@@ -8,6 +8,8 @@ const ALLOWED_TYPES = new Set(["task","project","action","event","info"]);
 const ALLOWED_PRIORITIES = new Set(["urgent","high","normal"]);
 const ALLOWED_STATUSES = new Set(["draft","new","soon","upcoming","active","done"]);
 const ALLOWED_CALENDAR_KINDS = new Set(["concept","task","event","report","registration"]);
+const ALLOWED_FILE_EXTENSIONS = new Set(["pdf","doc","docx","xls","xlsx","ppt","pptx","png","jpg","jpeg","zip","rar","odt","ods"]);
+const MAX_FILE_BYTES = 2621440;
 
 function json(res, status, body) {
   res.status(status);
@@ -56,6 +58,16 @@ function cleanLinks(v) {
     label: cleanString(x && x.label, 180),
     url: cleanString(x && x.url, 1600)
   })).filter(x=>x.label && /^https?:\/\//i.test(x.url)).slice(0,40);
+}
+function cleanAttachments(v) {
+  if (!Array.isArray(v)) return [];
+  return v.map(x=>({
+    name: cleanString(x && x.name, 260),
+    url: cleanString(x && x.url, 1800),
+    path: cleanString(x && x.path, 1200),
+    type: cleanString(x && x.type, 160),
+    size: Number(x && x.size) || 0
+  })).filter(x=>x.name && (x.url.startsWith("/files/") || /^https?:\/\//i.test(x.url))).slice(0,30);
 }
 function cleanFormatDetails(v) {
   if (!Array.isArray(v)) return [];
@@ -143,6 +155,7 @@ function cleanItem(raw) {
     notes: cleanStringArray(raw.notes,60,2500),
     links: cleanLinks(raw.links),
     materials: cleanLinks(raw.materials),
+    attachments: cleanAttachments(raw.attachments),
     copyText: cleanString(raw.copyText,6000)
   };
   Object.entries(optional).forEach(([k,v])=>{
@@ -211,6 +224,37 @@ module.exports = async function handler(req,res) {
   if (!validSession(token)) return json(res,401,{ok:false,error:"Сессия истекла. Войдите снова."});
 
   try {
+    if (body.action === "upload-file") {
+      const file = body.file && typeof body.file === "object" ? body.file : {};
+      const originalName = cleanString(file.name,260);
+      const mime = cleanString(file.type,160) || "application/octet-stream";
+      const base64 = cleanString(file.data, 5000000).replace(/^data:[^;]+;base64,/i,"");
+      const ext = originalName.includes(".") ? originalName.split(".").pop().toLowerCase() : "";
+      if (!originalName || !ALLOWED_FILE_EXTENSIONS.has(ext)) throw new Error("Недопустимый тип файла.");
+      if (!base64) throw new Error("Файл пуст.");
+      const bytes = Buffer.from(base64,"base64");
+      if (!bytes.length || bytes.length > MAX_FILE_BYTES) throw new Error("Файл должен быть не больше 2,5 МБ.");
+      const itemId = cleanString(body.itemId,90).replace(/[^a-zA-Z0-9_-]/g,"") || "card";
+      const suffix = crypto.randomBytes(6).toString("hex");
+      const filePath = "files/"+itemId+"/"+Date.now()+"-"+suffix+"."+ext;
+      const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
+      await gh("/contents/"+encodedPath,{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          message:"Добавить файл: "+originalName,
+          content:bytes.toString("base64"),
+          branch:BRANCH
+        })
+      });
+      return json(res,200,{ok:true,attachment:{
+        name:originalName,
+        url:"/"+filePath,
+        path:filePath,
+        type:mime,
+        size:bytes.length
+      }});
+    }
     if (body.action === "save-settings") {
       const incoming = cleanSettings(body.settings||{});
       const {data,sha} = await loadData();
