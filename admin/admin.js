@@ -293,7 +293,6 @@
     setVal("calendarStartKind",cm.start!==undefined?cm.start:(item.type==="action"?"concept":""));
     setVal("calendarDeadlineKind",cm.deadline!==undefined?cm.deadline:(item.type==="action"?(item.reportDeadline?"":"report"):(item.type==="event"?"":"task")));
     setVal("calendarEventKind",cm.eventDate!==undefined?cm.eventDate:(item.eventDate?"event":""));
-    setVal("calendarReportKind",cm.reportDeadline!==undefined?cm.reportDeadline:(item.reportDeadline?"report":""));
     setVal("status",item.status||"active");
     setVal("badges",(item.badges||[]).join(", "));
     setVal("source",item.source||"");
@@ -346,7 +345,7 @@
         start:getVal("calendarStartKind"),
         deadline:getVal("calendarDeadlineKind"),
         eventDate:getVal("calendarEventKind"),
-        reportDeadline:getVal("calendarReportKind")
+        reportDeadline:""
       },
       audience:$$('input[name="audience"]:checked',form).map(x=>x.value),
       status,category:getVal("category")||"Другое",
