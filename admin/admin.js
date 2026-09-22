@@ -1,18 +1,21 @@
 (()=> {
   const D = window.DASHBOARD_DATA || {items:[],meta:{}};
   let items = Array.isArray(D.items) ? structuredClone(D.items) : [];
+  let documents = Array.isArray(D.documents) ? structuredClone(D.documents) : [];
   let token = sessionStorage.getItem("pervyeAdminToken") || "";
   let editingOriginalId = null;
   let dirty = false;
   let activeEditor = "none";
   let attachments = [];
   let pendingFiles = [];
+  let deletedAttachments = [];
 
   const rootNode = r => typeof r === "string" ? document.querySelector(r) : r;
   const $ = (s,r=document)=>rootNode(r).querySelector(s);
   const $$ = (s,r=document)=>[...rootNode(r).querySelectorAll(s)];
   const form = $("#itemForm");
   const settingsForm = $("#siteSettingsForm");
+  const resourcesForm = $("#resourcesForm");
   const typeLabels = {task:"Задача",action:"Акция",project:"Проект",event:"Событие",info:"Информация"};
 
   const defaultSiteSettings = {
@@ -113,7 +116,15 @@
     $("#workspace").classList.remove("mobile-editing");
     $("#adminHeader").hidden=false;
     $("#logoutBtn").hidden=false;
+    renderCategoryOptions();
     renderList();
+  }
+
+  function renderCategoryOptions(){
+    const el=$("#categoryOptions");
+    if(!el) return;
+    const categories=[...new Set(items.map(i=>String(i.category||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
+    el.innerHTML=categories.map(x=>'<option value="'+esc(x)+'"></option>').join("");
   }
 
   function itemSort(a,b){
@@ -125,8 +136,12 @@
   function renderList(){
     const q=$("#itemSearch").value.trim().toLowerCase();
     const t=$("#itemTypeFilter").value;
+    const p=$("#itemPublishFilter").value;
     const list=items.filter(i=>{
       if(t!=="all"&&i.type!==t) return false;
+      if(p==="published" && (i.status==="draft"||i.visible===false)) return false;
+      if(p==="draft" && i.status!=="draft") return false;
+      if(p==="hidden" && !(i.visible===false&&i.status!=="draft")) return false;
       if(q && ![i.title,i.short,i.category].join(" ").toLowerCase().includes(q)) return false;
       return true;
     }).sort(itemSort);
@@ -148,6 +163,7 @@
     $("#materialsRepeater").innerHTML="";
     attachments=[];
     pendingFiles=[];
+    deletedAttachments=[];
     if($("#fileInput")) $("#fileInput").value="";
     renderAttachments();
     updateRepeaterEmpty();
@@ -247,6 +263,7 @@
   function hideEditors(){
     form.hidden=true;
     settingsForm.hidden=true;
+    resourcesForm.hidden=true;
     $("#editorEmpty").hidden=true;
   }
   function fillForm(item,isNew=false){
@@ -299,6 +316,7 @@
     (item.materials||[]).forEach(x=>addLink("material",x));
     attachments=structuredClone(item.attachments||[]);
     pendingFiles=[];
+    deletedAttachments=[];
     renderAttachments();
     updateRepeaterEmpty();
     setDirty(false);
@@ -309,7 +327,7 @@
 
   function readForm(){
     const title=getVal("title");
-    const id=(getVal("id")||slugify(title)||("item-"+Date.now())).replace(/[^a-zA-Z0-9_-]/g,"");
+    const id=getVal("id")||("item-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7));
     const formatDetails=collectFormats();
     const pub={
       deadline:getVal("publicationDeadline"),
@@ -350,6 +368,7 @@
       updatePublishBadge();
     }
     if(activeEditor==="settings") $("#settingsSaveState").textContent=v?"Есть несохранённые изменения":"Настройки сохранены";
+    if(activeEditor==="resources") $("#resourcesSaveState").textContent=v?"Есть несохранённые изменения":"Ресурсы сохранены";
   }
   function switchTab(name){
     $$(".form-tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
@@ -399,6 +418,88 @@
     pendingFiles=[];
     renderAttachments();
     return uploaded;
+  }
+
+  function resourceCardOptions(selected=""){
+    return '<option value="">Выберите карточку…</option>'+items.map(i=>'<option value="'+esc(i.id)+'" '+(i.id===selected?"selected":"")+'>'+esc(i.title)+'</option>').join("");
+  }
+  function syncResourceTarget(row){
+    const type=$(".r-target",row).value;
+    $(".r-url-wrap",row).hidden=type!=="url";
+    $(".r-item-wrap",row).hidden=type!=="item";
+  }
+  function addResource(data={}){
+    const target=data.itemId?"item":"url";
+    const row=document.createElement("div");
+    row.className="resource-card";
+    row.innerHTML=
+      '<div class="resource-card-head"><strong>Ресурс</strong><div class="resource-order">'+
+      '<button type="button" class="move-resource" data-dir="-1" aria-label="Переместить выше">↑</button>'+
+      '<button type="button" class="move-resource" data-dir="1" aria-label="Переместить ниже">↓</button>'+
+      '<button type="button" class="remove-resource">Удалить</button></div></div>'+
+      '<div class="field-grid two">'+
+      '<label>Тип / рубрика<input class="r-kind" value="'+esc(data.kind||"Ссылка")+'" placeholder="Курс, Проект, Сообщество…"></label>'+
+      '<label>Что открывать<select class="r-target"><option value="url" '+(target==="url"?"selected":"")+'>Внешнюю ссылку</option><option value="item" '+(target==="item"?"selected":"")+'>Карточку сайта</option></select></label>'+
+      '</div>'+
+      '<label>Название<input class="r-title" value="'+esc(data.title||"")+'" placeholder="Название ресурса"></label>'+
+      '<label>Краткое описание<textarea class="r-description" rows="2" placeholder="Что пользователь найдёт по этой ссылке">'+esc(data.description||"")+'</textarea></label>'+
+      '<label class="r-url-wrap">Ссылка<input class="r-url" type="url" value="'+esc(data.url||"")+'" placeholder="https://…"></label>'+
+      '<label class="r-item-wrap">Карточка<select class="r-item">'+resourceCardOptions(data.itemId||"")+'</select></label>';
+    $("#resourcesRepeater").appendChild(row);
+    syncResourceTarget(row);
+    updateResourcesEmpty();
+  }
+  function updateResourcesEmpty(){
+    $("#resourcesEmpty").hidden=Boolean($("#resourcesRepeater").children.length);
+  }
+  function collectResources(){
+    return $(".resource-card","#resourcesRepeater").map((row,n)=>{
+      const target=$(".r-target",row).value;
+      return {
+        id:(documents[n]&&documents[n].id)||("resource-"+Date.now().toString(36)+"-"+n),
+        kind:$(".r-kind",row).value.trim()||"Ссылка",
+        title:$(".r-title",row).value.trim(),
+        description:$(".r-description",row).value.trim(),
+        ...(target==="item"?{itemId:$(".r-item",row).value}:{url:$(".r-url",row).value.trim()})
+      };
+    }).filter(x=>x.title&&(x.url||x.itemId));
+  }
+  function fillResources(){
+    hideEditors();
+    activeEditor="resources";
+    editingOriginalId=null;
+    resourcesForm.hidden=false;
+    enterMobileEditor();
+    $("#resourcesRepeater").innerHTML="";
+    documents.forEach(addResource);
+    updateResourcesEmpty();
+    setDirty(false);
+    renderList();
+  }
+  async function saveResources(e){
+    e.preventDefault();
+    const next=collectResources();
+    const buttons=$('button[type="submit"]',resourcesForm);
+    const old=buttons.map(b=>b.textContent);
+    buttons.forEach(b=>{b.disabled=true;b.textContent="Сохраняем…"});
+    $("#resourcesSaveState").textContent="Сохраняем…";
+    try{
+      const result=await api({action:"save-documents",documents:next});
+      documents=structuredClone(result.documents||next);
+      dirty=false;
+      $("#resourcesSaveState").textContent="Сохранено. Vercel обновляет сайт…";
+      buttons.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]});
+      const live=await waitForLiveVersion(result.updatedAt,n=>{
+        $("#resourcesSaveState").textContent=n<3?"Vercel публикует ресурсы…":"Проверяем опубликованную версию…";
+      });
+      $("#resourcesSaveState").textContent=live?"Ресурсы опубликованы на сайте":"Сохранено в GitHub. Публикация ещё обновляется…";
+      toast(live?"Ресурсы уже на сайте":"Ресурсы сохранены");
+    }catch(err){
+      $("#resourcesSaveState").textContent="Не удалось сохранить";
+      toast(err.message);
+    }finally{
+      buttons.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]});
+    }
   }
 
   function openPreview(html){
@@ -452,18 +553,28 @@
         item.attachments=structuredClone(attachments);
       }
       const result=await api({action:"save-item",item});
+      const savedItem=result.item||item;
       const oldIdx=editingOriginalId?items.findIndex(x=>x.id===editingOriginalId):-1;
-      const sameIdx=items.findIndex(x=>x.id===item.id);
-      if(oldIdx>=0) items[oldIdx]=structuredClone(item);
-      else if(sameIdx>=0) items[sameIdx]=structuredClone(item);
-      else items.push(structuredClone(item));
-      editingOriginalId=item.id;
-      form.elements.id.value=item.id;
+      const sameIdx=items.findIndex(x=>x.id===savedItem.id);
+      if(oldIdx>=0) items[oldIdx]=structuredClone(savedItem);
+      else if(sameIdx>=0) items[sameIdx]=structuredClone(savedItem);
+      else items.push(structuredClone(savedItem));
+      editingOriginalId=savedItem.id;
+      form.elements.id.value=savedItem.id;
       form.elements.id.readOnly=true;
       $("#deleteBtn").hidden=false;
       $("#duplicateBtn").hidden=false;
       $("#editorMode").textContent="Редактирование";
-      $("#editorTitle").textContent=item.title;
+      $("#editorTitle").textContent=savedItem.title;
+      if(deletedAttachments.length){
+        const removal=[...deletedAttachments];
+        deletedAttachments=[];
+        for(const a of removal){
+          if(!a.path) continue;
+          try{await api({action:"delete-file",path:a.path})}catch{}
+        }
+      }
+      renderCategoryOptions();
       setDirty(false);
       updatePublishBadge();
       $("#saveState").textContent="Сохранено. Vercel обновляет сайт…";
@@ -554,6 +665,10 @@
     if(dirty && !confirm("Есть несохранённые изменения. Продолжить без сохранения?")) return;
     fillForm({type:"task",priority:"normal",status:"active",visible:true,audience:["schools"],category:"",title:"",short:""},true);
   });
+  $("#resourcesBtn").addEventListener("click",()=>{
+    if(dirty && !confirm("Есть несохранённые изменения. Перейти к ресурсам без сохранения?")) return;
+    fillResources();
+  });
   $("#siteSettingsBtn").addEventListener("click",()=>{
     if(dirty && !confirm("Есть несохранённые изменения. Перейти к настройкам без сохранения?")) return;
     fillSettings();
@@ -577,8 +692,16 @@
     leaveMobileEditor();
     renderList();
   });
+  $("#resourcesBackToListBtn").addEventListener("click",()=>{
+    if(dirty && !confirm("Есть несохранённые изменения. Вернуться к списку без сохранения?")) return;
+    dirty=false;
+    leaveMobileEditor();
+    renderList();
+  });
+  $("#addResourceBtn").addEventListener("click",()=>{addResource();setDirty()});
   $("#itemSearch").addEventListener("input",renderList);
   $("#itemTypeFilter").addEventListener("change",renderList);
+  $("#itemPublishFilter").addEventListener("change",renderList);
   $$(".form-tabs button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
   $("#addFormatBtn").addEventListener("click",()=>{addFormat();setDirty()});
   $("#addLinkBtn").addEventListener("click",()=>{addLink("link");setDirty()});
@@ -598,8 +721,21 @@
   document.addEventListener("click",e=>{
     const rm=e.target.closest(".remove-repeat");
     if(rm){rm.closest(".repeat-card,.link-row").remove();updateRepeaterEmpty();setDirty();return}
+    const resourceRemove=e.target.closest(".remove-resource");
+    if(resourceRemove){resourceRemove.closest(".resource-card").remove();updateResourcesEmpty();setDirty();return}
+    const resourceMove=e.target.closest(".move-resource");
+    if(resourceMove){
+      const row=resourceMove.closest(".resource-card"), dir=Number(resourceMove.dataset.dir);
+      if(dir<0&&row.previousElementSibling) row.parentNode.insertBefore(row,row.previousElementSibling);
+      if(dir>0&&row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling,row);
+      setDirty();return
+    }
     const savedFile=e.target.closest("[data-remove-attachment]");
-    if(savedFile){attachments.splice(Number(savedFile.dataset.removeAttachment),1);renderAttachments();setDirty();return}
+    if(savedFile){
+      const removed=attachments.splice(Number(savedFile.dataset.removeAttachment),1)[0];
+      if(removed&&removed.path) deletedAttachments.push(removed);
+      renderAttachments();setDirty();return
+    }
     const pendingFile=e.target.closest("[data-remove-pending]");
     if(pendingFile){pendingFiles.splice(Number(pendingFile.dataset.removePending),1);renderAttachments();setDirty();return}
     if(e.target.closest("[data-close-preview]")){$("#previewModal").hidden=true;document.body.style.overflow="";}
@@ -608,8 +744,11 @@
   form.addEventListener("change",()=>setDirty());
   settingsForm.addEventListener("input",()=>setDirty());
   settingsForm.addEventListener("change",()=>setDirty());
+  resourcesForm.addEventListener("input",()=>setDirty());
+  resourcesForm.addEventListener("change",e=>{if(e.target.classList.contains("r-target"))syncResourceTarget(e.target.closest(".resource-card"));setDirty()});
   form.addEventListener("submit",publishItem);
   settingsForm.addEventListener("submit",saveSettings);
+  resourcesForm.addEventListener("submit",saveResources);
   $("#previewBtn").addEventListener("click",previewItem);
   $("#settingsPreviewBtn").addEventListener("click",previewSettings);
   $("#deleteBtn").addEventListener("click",deleteCurrent);
