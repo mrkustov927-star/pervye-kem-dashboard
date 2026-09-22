@@ -5,8 +5,9 @@
   let editingOriginalId = null;
   let dirty = false;
 
-  const $ = (s,r=document)=>r.querySelector(s);
-  const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+  const rootNode = r => typeof r === "string" ? document.querySelector(r) : r;
+  const $ = (s,r=document)=>rootNode(r).querySelector(s);
+  const $ = (s,r=document)=>[...rootNode(r).querySelectorAll(s)];
   const form = $("#itemForm");
   const typeLabels = {task:"Задача",action:"Акция",project:"Проект",event:"Событие",info:"Информация"};
 
