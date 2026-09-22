@@ -32,6 +32,16 @@
     return !e||e>=now;
   };
 
+  function renderFreshness(){
+    const el=$("#siteUpdatedAt");
+    if(!el) return;
+    const raw=D.meta&&D.meta.updatedAt;
+    if(!raw){el.textContent="";return}
+    const d=new Date(raw);
+    if(Number.isNaN(d.getTime())){el.textContent="";return}
+    el.textContent="Обновлено "+d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",timeZone:"Europe/Moscow"})+" · "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Moscow"});
+  }
+
   function applySiteSettings(){
     const s=(D.meta&&D.meta.site)||{};
     const put=(selector,value)=>{const el=$(selector);if(el&&value)el.textContent=value};
@@ -360,6 +370,7 @@
   const shortcut=$("#searchShortcut");
   if(shortcut) shortcut.textContent=/Mac|iPhone|iPad/i.test(navigator.platform||"")?"⌘ K":"Ctrl K";
   applySiteSettings();
+  renderFreshness();
   renderHero();
   renderTasks();
   renderCalendar();
