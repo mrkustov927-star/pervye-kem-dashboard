@@ -258,6 +258,13 @@
     if(i.hashtags&&i.hashtags.length) detail+='<section class="detail-section"><h3>Хештеги</h3><p>'+i.hashtags.map(esc).join(" ")+'</p><div class="detail-actions"><button data-copy-hashtags="'+i.id+'">Скопировать хештеги</button></div></section>';
     if(i.hashtagsByOrg&&i.hashtagsByOrg.length) detail+='<section class="detail-section"><h3>Хештеги первичек</h3>'+i.hashtagsByOrg.map(x=>'<p>'+esc(x)+'</p>').join("")+'<div class="detail-actions"><button data-copy-hashtags="'+i.id+'">Скопировать список</button></div></section>';
     if(i.notes&&i.notes.length) detail+='<section class="detail-section"><h3>Важно</h3>'+i.notes.map(x=>'<p>'+esc(x)+'</p>').join("")+'</section>';
+    if(i.attachments&&i.attachments.length){
+      detail+='<section class="detail-section"><h3>Файлы для скачивания</h3><div class="attachment-list">'+i.attachments.map(a=>{
+        const ext=(a.name||"").split(".").pop().toUpperCase();
+        const size=a.size?(a.size<1048576?Math.round(a.size/1024)+" КБ":(a.size/1048576).toFixed(1).replace(".0","")+" МБ"):"";
+        return '<a class="attachment-download" href="'+a.url+'" download><span class="attachment-type">'+esc(ext||"ФАЙЛ")+'</span><span class="attachment-copy"><strong>'+esc(a.name)+'</strong><small>'+esc(size)+'</small></span><span class="attachment-arrow">Скачать ↓</span></a>';
+      }).join("")+'</div></section>';
+    }
     const links=[...(i.links||[]),...(i.materials||[])];
     if(links.length||i.copyText) detail+='<section class="detail-section"><h3>Действия</h3><div class="detail-actions">'+links.map((l,n)=>'<a class="'+(n===0?"primary":"")+'" href="'+l.url+'" target="_blank" rel="noopener">'+esc(l.label)+' ↗</a>').join("")+(i.copyText?'<button data-copy="'+i.id+'">Скопировать инструкцию</button>':"")+'</div></section>';
     const audience=audienceText(i);
