@@ -90,7 +90,7 @@
 
             <div class="form-panel active" data-panel="basic">
               <div class="field-grid two">
-                <label>Тип
+                <label>Тип карточки (раздел сайта)
                   <select name="type" required>
                     <option value="task">Задача</option>
                     <option value="action">Акция</option>
@@ -118,6 +118,53 @@
                 <label>Срок отчёта<input name="reportDeadline" type="date"></label>
               </div>
 
+              <fieldset class="calendar-display-settings">
+                <legend>Как показывать даты в календаре</legend>
+                <p class="field-help">Тип карточки и подпись в календаре — разные вещи. Например, карточка может быть «Акция», а её дата в календаре — «Концепция» или «Отчёт».</p>
+                <div class="field-grid four">
+                  <label>Дата начала
+                    <select name="calendarStartKind">
+                      <option value="">Не показывать</option>
+                      <option value="concept">Концепция</option>
+                      <option value="task">Задача</option>
+                      <option value="event">Мероприятие</option>
+                      <option value="registration">Регистрация</option>
+                      <option value="report">Отчёт</option>
+                    </select>
+                  </label>
+                  <label>Дедлайн
+                    <select name="calendarDeadlineKind">
+                      <option value="">Не показывать</option>
+                      <option value="concept">Концепция</option>
+                      <option value="task">Задача</option>
+                      <option value="event">Мероприятие</option>
+                      <option value="registration">Регистрация</option>
+                      <option value="report">Отчёт</option>
+                    </select>
+                  </label>
+                  <label>Дата события
+                    <select name="calendarEventKind">
+                      <option value="">Не показывать</option>
+                      <option value="concept">Концепция</option>
+                      <option value="task">Задача</option>
+                      <option value="event">Мероприятие</option>
+                      <option value="registration">Регистрация</option>
+                      <option value="report">Отчёт</option>
+                    </select>
+                  </label>
+                  <label>Срок отчёта
+                    <select name="calendarReportKind">
+                      <option value="">Не показывать</option>
+                      <option value="concept">Концепция</option>
+                      <option value="task">Задача</option>
+                      <option value="event">Мероприятие</option>
+                      <option value="registration">Регистрация</option>
+                      <option value="report">Отчёт</option>
+                    </select>
+                  </label>
+                </div>
+              </fieldset>
+
               <div class="field-grid three">
                 <label>Приоритет
                   <select name="priority">
@@ -126,7 +173,7 @@
                     <option value="urgent">Срочный</option>
                   </select>
                 </label>
-                <label>Рубрика календаря
+                <label>Основная рубрика календаря
                   <select name="calendarKind">
                     <option value="task">Задача</option>
                     <option value="concept">Концепция</option>
