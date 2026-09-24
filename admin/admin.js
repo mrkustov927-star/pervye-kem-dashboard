@@ -1,7 +1,8 @@
 (()=> {
   const D = window.DASHBOARD_DATA || {items:[],meta:{}};
-  let items = Array.isArray(D.items) ? structuredClone(D.items) : [];
-  let documents = Array.isArray(D.documents) ? structuredClone(D.documents) : [];
+  const clone = typeof structuredClone==="function" ? structuredClone : value=>JSON.parse(JSON.stringify(value));
+  let items = Array.isArray(D.items) ? clone(D.items) : [];
+  let documents = Array.isArray(D.documents) ? clone(D.documents) : [];
   let token = sessionStorage.getItem("pervyeAdminToken") || "";
   let editingOriginalId = null;
   let dirty = false;
@@ -683,7 +684,7 @@
     if(!btn) return;
     if(dirty && !confirm("Есть несохранённые изменения. Перейти к другой карточке без сохранения?")) return;
     const item=items.find(x=>x.id===btn.dataset.edit);
-    if(item) fillForm(structuredClone(item),false);
+    if(item) fillForm(clone(item),false);
   });
   $("#backToListBtn").addEventListener("click",()=>{
     if(dirty && !confirm("Есть неопубликованные изменения. Вернуться к списку без сохранения?")) return;
