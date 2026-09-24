@@ -4,7 +4,7 @@
     : {meta:{},items:[],documents:[],updates:[]};
   const items=Array.isArray(D.items)?D.items:[];
   const $=(s,r=document)=>r&&typeof r.querySelector==="function"?r.querySelector(s):null;
-  const $=(s,r=document)=>r&&typeof r.querySelectorAll==="function"?[...r.querySelectorAll(s)]:[];
+  const $$=(s,r=document)=>r&&typeof r.querySelectorAll==="function"?[...r.querySelectorAll(s)]:[];
   const run=(name,fn)=>{try{return fn()}catch(error){console.error("[dashboard] "+name,error);return null}};
   const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Moscow"})); now.setHours(12,0,0,0);
   const monthNames=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
@@ -443,7 +443,7 @@
     if(e.key==="Escape"){closeModal();const panel=$("#searchPanel");if(panel)panel.hidden=true;document.body.style.overflow="";return}
     const modal=$("#detailModal");
     if(e.key==="Tab"&&modal&&!modal.hidden){
-      const focusables=$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary',modal).filter(x=>x.offsetParent!==null);
+      const focusables=$$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary',modal).filter(x=>x.offsetParent!==null);
       if(!focusables.length)return;
       const first=focusables[0],last=focusables[focusables.length-1];
       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
