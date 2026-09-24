@@ -1,8 +1,11 @@
 (()=> {
-  const D=window.DASHBOARD_DATA;
-  const items=D.items;
-  const $=(s,r=document)=>r.querySelector(s);
-  const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const D=(window.DASHBOARD_DATA&&typeof window.DASHBOARD_DATA==="object")
+    ? window.DASHBOARD_DATA
+    : {meta:{},items:[],documents:[],updates:[]};
+  const items=Array.isArray(D.items)?D.items:[];
+  const $=(s,r=document)=>r&&typeof r.querySelector==="function"?r.querySelector(s):null;
+  const $=(s,r=document)=>r&&typeof r.querySelectorAll==="function"?[...r.querySelectorAll(s)]:[];
+  const run=(name,fn)=>{try{return fn()}catch(error){console.error("[dashboard] "+name,error);return null}};
   const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Moscow"})); now.setHours(12,0,0,0);
   const monthNames=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
@@ -296,7 +299,7 @@
   }
   function googleCalendarUrl(i){
     const ev=calendarEventFor(i); if(!ev) return "";
-    const start=ev.date.replaceAll("-","");
+    const start=ev.date.replace(/-/g,"");
     const end=addDaysIso(ev.date,1).replaceAll("-","");
     const p=new URLSearchParams({
       action:"TEMPLATE",
@@ -311,7 +314,7 @@
   }
   function downloadIcs(i){
     const ev=calendarEventFor(i); if(!ev) return;
-    const start=ev.date.replaceAll("-","");
+    const start=ev.date.replace(/-/g,"");
     const end=addDaysIso(ev.date,1).replaceAll("-","");
     const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
     const uid=i.id+"@pervye-kem-dashboard";
@@ -388,7 +391,7 @@
     const url=new URL(location.href);
     url.searchParams.set("card",i.id);
     history.replaceState(null,"",url);
-    requestAnimationFrame(()=>$(".modal-close").focus());
+    requestAnimationFrame(()=>{const closeBtn=$(".modal-close");if(closeBtn)closeBtn.focus()});
   }
 
   function closeModal(){ const modal=$("#detailModal"); if(!modal.hidden){modal.hidden=true;document.body.style.overflow="";const url=new URL(location.href);url.searchParams.delete("card");history.replaceState(null,"",url);if(lastFocused&&lastFocused.focus)lastFocused.focus();} }
@@ -430,15 +433,16 @@
     x=e.target.closest("[data-apple-calendar]"); if(x){const item=items.find(i=>i.id===x.dataset.appleCalendar);if(item)downloadIcs(item);return}
     x=e.target.closest("[data-copy]"); if(x){copyItem(x.dataset.copy);return}
     x=e.target.closest("[data-toast]"); if(x){toast(x.dataset.toast);return}
-    if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")) $("#searchPanel").hidden=true;
+    if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")){const panel=$("#searchPanel");if(panel)panel.hidden=true;}
   });
 
-  $("#globalSearch").oninput=e=>doSearch(e.target.value);
+  const searchInput=$("#globalSearch");
+  if(searchInput) searchInput.oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#globalSearch").focus()}
     if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow="";return}
     const modal=$("#detailModal");
-    if(e.key==="Tab"&&!modal.hidden){
+    if(e.key==="Tab"&&modal&&!modal.hidden){
       const focusables=$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary',modal).filter(x=>x.offsetParent!==null);
       if(!focusables.length)return;
       const first=focusables[0],last=focusables[focusables.length-1];
@@ -449,15 +453,17 @@
 
   const shortcut=$("#searchShortcut");
   if(shortcut) shortcut.textContent=/Mac|iPhone|iPad/i.test(navigator.platform||"")?"⌘ K":"Ctrl K";
-  applySiteSettings();
-  renderFreshness();
-  renderHero();
-  renderTasks();
-  renderCalendar();
-  renderProjects();
-  renderDocs();
-  renderUpdates();
-  renderArchive();
-  const deepLinkedCard=new URL(location.href).searchParams.get("card");
-  if(deepLinkedCard) setTimeout(()=>openModal(deepLinkedCard),0);
+  run("settings",applySiteSettings);
+  run("freshness",renderFreshness);
+  run("hero",renderHero);
+  run("tasks",renderTasks);
+  run("calendar",renderCalendar);
+  run("projects",renderProjects);
+  run("docs",renderDocs);
+  run("updates",renderUpdates);
+  run("archive",renderArchive);
+  run("deep-link",()=>{
+    const deepLinkedCard=new URL(location.href).searchParams.get("card");
+    if(deepLinkedCard)setTimeout(()=>openModal(deepLinkedCard),0);
+  });
 })();
