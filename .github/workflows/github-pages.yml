@@ -49,18 +49,12 @@ jobs:
 
           app = Path("_site/app.js")
           js = app.read_text(encoding="utf-8")
-          old = '''  const safeUrl=u=>{
-            const v=String(u||"").trim();
-            return (/^https?:\\/\\//i.test(v)||/^\\/files\\//.test(v))?esc(v):"#";
-          };'''
-          new = '''  const safeUrl=u=>{
-            const v=String(u||"").trim();
-            if(/^https?:\\/\\//i.test(v)) return esc(v);
+          old = 'return (/^https?:\\/\\//i.test(v)||/^\\/files\\//.test(v))?esc(v):"#";'
+          new = '''if(/^https?:\\/\\//i.test(v)) return esc(v);
             if(/^\\/files\\//.test(v)) return esc("./"+v.replace(/^\\/+/, ""));
-            return "#";
-          };'''
+            return "#";'''
           if old not in js:
-              raise SystemExit("safeUrl block not found; backup build stopped to avoid broken file links")
+              raise SystemExit("safeUrl return line not found; backup build stopped to avoid broken file links")
           app.write_text(js.replace(old, new), encoding="utf-8")
           PY
 
