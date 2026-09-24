@@ -439,8 +439,8 @@
   const searchInput=$("#globalSearch");
   if(searchInput) searchInput.oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#globalSearch").focus()}
-    if(e.key==="Escape"){closeModal();$("#searchPanel").hidden=true;document.body.style.overflow="";return}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();const input=$("#globalSearch");if(input)input.focus()}
+    if(e.key==="Escape"){closeModal();const panel=$("#searchPanel");if(panel)panel.hidden=true;document.body.style.overflow="";return}
     const modal=$("#detailModal");
     if(e.key==="Tab"&&modal&&!modal.hidden){
       const focusables=$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary',modal).filter(x=>x.offsetParent!==null);
