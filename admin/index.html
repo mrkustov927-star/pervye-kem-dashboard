@@ -132,7 +132,22 @@
 
               <fieldset class="calendar-display-settings">
                 <legend>Как показывать даты в календаре</legend>
-                <p class="field-help">Тип карточки и подпись в календаре — разные вещи. Например, карточка может быть «Акция», а её дата в календаре — «Концепция». Срок отчёта сохраняется внутри карточки и отдельно в календаре не показывается.</p>
+                <p class="field-help">Тип карточки и подпись в календаре — разные вещи. При необходимости можно задать отдельную дату показа в календаре: фактический дедлайн карточки при этом не изменится.</p>
+                <div class="field-grid two calendar-override-grid">
+                  <label>Дата показа в календаре
+                    <input name="calendarDisplayDate" type="date">
+                    <small>Не меняет реальный срок в карточке.</small>
+                  </label>
+                  <label>Рубрика этой даты
+                    <select name="calendarDisplayKind">
+                      <option value="">Автоматически</option>
+                      <option value="concept">Концепция</option>
+                      <option value="task">Задача</option>
+                      <option value="event">Мероприятие</option>
+                      <option value="registration">Регистрация</option>
+                    </select>
+                  </label>
+                </div>
                 <div class="field-grid four">
                   <label>Дата начала
                     <select name="calendarStartKind">
