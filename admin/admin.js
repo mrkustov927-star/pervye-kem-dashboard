@@ -290,6 +290,8 @@
     setVal("eventDate",item.eventDate||"");
     setVal("reportDeadline",item.reportDeadline||"");
     setVal("priority",item.priority||"normal");
+    setVal("calendarDisplayDate",item.calendarDisplayDate||"");
+    setVal("calendarDisplayKind",item.calendarDisplayKind||"");
     const cm=item.calendarMap||{};
     setVal("calendarStartKind",cm.start!==undefined?cm.start:(item.type==="action"?"concept":""));
     setVal("calendarDeadlineKind",cm.deadline!==undefined?cm.deadline:(item.type==="action"?(item.reportDeadline?"":"report"):(item.type==="event"?"":"task")));
@@ -342,6 +344,8 @@
       start:getVal("start")||null,deadline:getVal("deadline")||null,eventDate:getVal("eventDate")||null,reportDeadline:getVal("reportDeadline")||null,
       priority:getVal("priority")||"normal",
       calendarKind:(getVal("type")==="action"?"concept":getVal("type")==="event"?"event":"task"),
+      calendarDisplayDate:getVal("calendarDisplayDate")||null,
+      calendarDisplayKind:getVal("calendarDisplayKind")||"",
       calendarMap:{
         start:getVal("calendarStartKind"),
         deadline:getVal("calendarDeadlineKind"),
