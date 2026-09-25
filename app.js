@@ -170,10 +170,13 @@
   function renderCalendar(){
     const monthNom=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     const monthSet=new Set([currentYm]);
-    items.filter(isPublic).forEach(i=>[i.start,i.deadline,i.eventDate].filter(Boolean).forEach(d=>{
-      const key=d.slice(0,7);
-      if(key>=currentYm) monthSet.add(key);
-    }));
+    items.filter(isPublic).forEach(i=>{
+      const dates=i.calendarDisplayDate?[i.calendarDisplayDate]:[i.start,i.deadline,i.eventDate].filter(Boolean);
+      dates.forEach(d=>{
+        const key=d.slice(0,7);
+        if(key>=currentYm) monthSet.add(key);
+      });
+    });
     const monthKeys=[...monthSet].sort();
     if(!monthKeys.includes(calendarMonth)) calendarMonth=monthKeys.find(x=>x>=currentYm)||monthKeys[0];
     const years=new Set(monthKeys.map(x=>x.slice(0,4)));
@@ -202,6 +205,10 @@
     };
 
     items.filter(isPublic).forEach(i=>{
+      if(i.calendarDisplayDate){
+        push(i.calendarDisplayDate,i,i.calendarDisplayKind||defaultKind(i));
+        return;
+      }
       if(i.calendarMap&&typeof i.calendarMap==="object"){
         push(i.start,i,i.calendarMap.start);
         push(i.deadline,i,i.calendarMap.deadline);
