@@ -175,6 +175,8 @@ function cleanItem(raw) {
     deadline: cleanString(raw.deadline, 10) || null,
     priority,
     calendarKind,
+    calendarDisplayDate: cleanString(raw.calendarDisplayDate,10) || null,
+    calendarDisplayKind: ALLOWED_CALENDAR_KINDS.has(raw.calendarDisplayKind) ? raw.calendarDisplayKind : "",
     calendarMap: cleanCalendarMap(raw.calendarMap),
     audience: cleanStringArray(raw.audience, 20, 100),
     status,
