@@ -69,6 +69,18 @@
     put("#docsSubtitle",s.docsSubtitle);
     put("#archiveTitle",s.archiveTitle);
     put("#footerSubtitle",s.footerSubtitle);
+    const banner=$("#kindnessBanner");
+    if(banner){
+      const enabled=s.announcementEnabled!=="false";
+      banner.hidden=!enabled;
+      put("#announcementTitle",s.announcementTitle);
+      put("#announcementText",s.announcementText);
+      const link=$("#announcementLink");
+      if(link){
+        if(/^https?:\/\//i.test(s.announcementUrl||"")) link.href=s.announcementUrl;
+        if(s.announcementButton) link.textContent=s.announcementButton+" ↗";
+      }
+    }
   }
 
   function deadlineLabel(i){
