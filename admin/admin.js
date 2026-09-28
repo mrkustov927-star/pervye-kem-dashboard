@@ -291,7 +291,7 @@
     archiveBtn.textContent=item.archived===true?"Вернуть":"В архив";
     archiveBtn.className=item.archived===true?"ghost-btn restore":"ghost-btn archive";
     $("#duplicateBtn").hidden=isNew;
-    const submitButtons=$('button[type="submit"]',form);
+    const submitButtons=$$('button[type="submit"]',form);
     if(item.archived===true){
       submitButtons.forEach(b=>b.textContent="Сохранить в архиве");
     }else{
@@ -477,7 +477,7 @@
     $("#resourcesEmpty").hidden=Boolean($("#resourcesRepeater").children.length);
   }
   function collectResources(){
-    return $(".resource-card","#resourcesRepeater").map((row,n)=>{
+    return $$(".resource-card","#resourcesRepeater").map((row,n)=>{
       const target=$(".r-target",row).value;
       return {
         id:(documents[n]&&documents[n].id)||("resource-"+Date.now().toString(36)+"-"+n),
@@ -503,7 +503,7 @@
   async function saveResources(e){
     e.preventDefault();
     const next=collectResources();
-    const buttons=$('button[type="submit"]',resourcesForm);
+    const buttons=$$('button[type="submit"]',resourcesForm);
     const old=buttons.map(b=>b.textContent);
     buttons.forEach(b=>{b.disabled=true;b.textContent="Сохраняем…"});
     $("#resourcesSaveState").textContent="Сохраняем…";
