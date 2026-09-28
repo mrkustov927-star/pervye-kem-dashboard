@@ -361,6 +361,12 @@ module.exports = async function handler(req,res) {
       data.items = Array.isArray(data.items) ? data.items : [];
       const idx = data.items.findIndex(x=>x.id===incoming.id);
       const before=idx>=0?data.items[idx]:null;
+      if(before && before.archived===true){
+        incoming.archived=true;
+        incoming.archivedAt=before.archivedAt||new Date().toISOString();
+        incoming.archivedPreviousVisible=before.archivedPreviousVisible!==false;
+        incoming.visible=false;
+      }
       if (idx >= 0) data.items[idx] = incoming;
       else data.items.push(incoming);
       if(incoming.visible!==false && incoming.status!=="draft"){
@@ -368,6 +374,40 @@ module.exports = async function handler(req,res) {
       }
       const result = await saveData(data,sha,(idx>=0?"Обновить: ":"Добавить: ")+incoming.title);
       return json(res,200,{ok:true,mode:idx>=0?"updated":"created",item:incoming,sha:result.commit && result.commit.sha,updatedAt:data.meta.updatedAt});
+    }
+
+    if (body.action === "archive-item") {
+      const id = cleanString(body.id,90).replace(/[^a-zA-Z0-9_-]/g,"");
+      if (!id) throw new Error("Не указан ID.");
+      const {data,sha} = await loadData();
+      data.items = Array.isArray(data.items) ? data.items : [];
+      const idx=data.items.findIndex(x=>x.id===id);
+      if(idx<0) throw new Error("Карточка не найдена.");
+      const item=data.items[idx];
+      if(item.archived!==true){
+        item.archived=true;
+        item.archivedAt=new Date().toISOString();
+        item.archivedPreviousVisible=item.visible!==false;
+        item.visible=false;
+      }
+      const result=await saveData(data,sha,"Архивировать карточку: "+item.title);
+      return json(res,200,{ok:true,item,sha:result.commit&&result.commit.sha,updatedAt:data.meta.updatedAt});
+    }
+
+    if (body.action === "restore-item") {
+      const id = cleanString(body.id,90).replace(/[^a-zA-Z0-9_-]/g,"");
+      if (!id) throw new Error("Не указан ID.");
+      const {data,sha} = await loadData();
+      data.items = Array.isArray(data.items) ? data.items : [];
+      const idx=data.items.findIndex(x=>x.id===id);
+      if(idx<0) throw new Error("Карточка не найдена.");
+      const item=data.items[idx];
+      item.visible=item.archivedPreviousVisible!==false;
+      delete item.archived;
+      delete item.archivedAt;
+      delete item.archivedPreviousVisible;
+      const result=await saveData(data,sha,"Вернуть карточку из архива: "+item.title);
+      return json(res,200,{ok:true,item,sha:result.commit&&result.commit.sha,updatedAt:data.meta.updatedAt});
     }
 
     if (body.action === "delete-item") {
