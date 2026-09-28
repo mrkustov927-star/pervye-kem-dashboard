@@ -131,7 +131,7 @@ function cleanSettings(v) {
   const src = v && typeof v === "object" ? v : {};
   const keys = [
     "siteTitle","districtLabel","heroEyebrow","heroTitle","heroAccent","heroLead",
-    "heroPrimary","heroSecondary","nowTitle","nowSubtitle","calendarTitle",
+    "heroPrimary","heroSecondary","announcementEnabled","announcementTitle","announcementText","announcementUrl","announcementButton","nowTitle","nowSubtitle","calendarTitle",
     "calendarSubtitle","projectsTitle","projectsSubtitle","docsTitle","docsSubtitle",
     "archiveTitle","footerSubtitle"
   ];
