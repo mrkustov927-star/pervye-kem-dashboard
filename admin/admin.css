@@ -90,3 +90,9 @@
   .resource-card-head{align-items:flex-start}
   .resource-order{flex-wrap:wrap;justify-content:flex-end}
 }
+
+.ghost-btn.archive{color:#725b12;background:#fffaf0;border-color:#eadcae}
+.ghost-btn.archive:hover{background:#fff4d6}
+.ghost-btn.restore{color:#176844;background:#edf9f3;border-color:#c8e8d7}
+.ghost-btn.restore:hover{background:#e2f5eb}
+.publish-state-badge.archived,.item-row-status.archived{background:#eee9fb;color:#6547a6}
