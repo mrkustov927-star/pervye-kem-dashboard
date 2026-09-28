@@ -23,7 +23,7 @@
   const fmt=d=>{const x=parseDate(d);return x?x.getDate()+" "+monthNames[x.getMonth()]:"Срок уточняется"};
   const fmtShort=d=>{const x=parseDate(d);return x?x.getDate()+" "+monthShort[x.getMonth()]:"—"};
   const typeLabel={task:"Задача",project:"Проект",action:"Акция",event:"Событие",info:"Информация"};
-  const isPublic=i=>i.visible!==false&&i.status!=="draft";
+  const isPublic=i=>i.visible!==false&&i.status!=="draft"&&i.archived!==true;
   const safeUrl=u=>{
     const v=String(u||"").trim();
     return (/^https?:\/\//i.test(v)||/^\/files\//.test(v))?esc(v):"#";
