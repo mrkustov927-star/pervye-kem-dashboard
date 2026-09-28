@@ -1,7 +1,7 @@
 window.DASHBOARD_DATA = {
   "meta": {
     "title": "Первые · Кемский округ",
-    "updatedAt": "2026-09-28T16:47:19.724Z",
+    "updatedAt": "2026-09-28T16:57:43.791Z",
     "editorialNote": "Даты и формулировки проверены по официальным рекомендациям и рабочей переписке первичных организаций. Если срок в источнике не указан, карточка не получает выдуманный дедлайн.",
     "site": {
       "announcementEnabled": "true",
@@ -47,6 +47,8 @@ window.DASHBOARD_DATA = {
       "deadline": "2026-09-24",
       "priority": "urgent",
       "calendarKind": "task",
+      "calendarDisplayDate": null,
+      "calendarDisplayKind": "",
       "calendarMap": {
         "start": "",
         "deadline": "task",
@@ -56,7 +58,7 @@ window.DASHBOARD_DATA = {
       "audience": [
         "schools"
       ],
-      "status": "active",
+      "status": "done",
       "category": "Совет Первых",
       "badges": [
         "Срочно"
@@ -1657,6 +1659,11 @@ window.DASHBOARD_DATA = {
     }
   ],
   "updates": [
+    {
+      "date": "2026-09-28T16:57:43.790Z",
+      "title": "Обновлено: Провести выборы в Совет Первых",
+      "text": "Уточнены: параметры карточки."
+    },
     {
       "date": "2026-09-25T12:01:51.520Z",
       "title": "Уточнён календарь: «Приключения Первых»",
