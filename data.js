@@ -1,7 +1,7 @@
 window.DASHBOARD_DATA = {
   "meta": {
     "title": "Первые · Кемский округ",
-    "updatedAt": "2026-09-28T10:20:00.562Z",
+    "updatedAt": "2026-09-28T12:33:26.876Z",
     "editorialNote": "Даты и формулировки проверены по официальным рекомендациям и рабочей переписке первичных организаций. Если срок в источнике не указан, карточка не получает выдуманный дедлайн.",
     "site": {
       "announcementEnabled": "true",
@@ -1256,7 +1256,7 @@ window.DASHBOARD_DATA = {
       "category": "Первая помощь",
       "badges": [],
       "source": "",
-      "visible": true,
+      "visible": false,
       "eventDate": "2026-09-29",
       "reportDeadline": "2026-10-09",
       "steps": [
@@ -1293,7 +1293,10 @@ window.DASHBOARD_DATA = {
           "label": "Регистрация взрослого на мастер-класс.",
           "url": "https://projects.pervye.ru/super-projects/cee5f903-9100-4cfb-8cbb-fa95fcff6b15"
         }
-      ]
+      ],
+      "archived": true,
+      "archivedAt": "2026-09-28T12:33:26.876Z",
+      "archivedPreviousVisible": true
     },
     {
       "id": "item-mue5fl00-n3xak",
