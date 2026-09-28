@@ -145,15 +145,17 @@
     const p=$("#itemPublishFilter").value;
     const list=items.filter(i=>{
       if(t!=="all"&&i.type!==t) return false;
-      if(p==="published" && (i.status==="draft"||i.visible===false)) return false;
-      if(p==="draft" && i.status!=="draft") return false;
-      if(p==="hidden" && !(i.visible===false&&i.status!=="draft")) return false;
+      if(p==="all" && i.archived===true) return false;
+      if(p==="published" && (i.archived===true||i.status==="draft"||i.visible===false)) return false;
+      if(p==="draft" && (i.archived===true||i.status!=="draft")) return false;
+      if(p==="hidden" && (i.archived===true||!(i.visible===false&&i.status!=="draft"))) return false;
+      if(p==="archived" && i.archived!==true) return false;
       if(q && ![i.title,i.short,i.category].join(" ").toLowerCase().includes(q)) return false;
       return true;
     }).sort(itemSort);
     $("#itemList").innerHTML=list.map(i=>{
-      const publishState=i.status==="draft"?"Черновик":(i.visible===false?"Скрыта":"Опубликована");
-      const stateClass=i.status==="draft"?"draft":(i.visible===false?"hidden":"published");
+      const publishState=i.archived===true?"Архив":(i.status==="draft"?"Черновик":(i.visible===false?"Скрыта":"Опубликована"));
+      const stateClass=i.archived===true?"archived":(i.status==="draft"?"draft":(i.visible===false?"hidden":"published"));
       return '<button class="item-row '+(activeEditor==="item"&&editingOriginalId===i.id?"active":"")+'" data-edit="'+esc(i.id)+'" type="button">'+
       '<span class="item-row-top"><span class="item-row-type">'+esc(typeLabels[i.type]||i.type)+'</span><span class="item-row-date">'+esc(fmtDate(i.deadline||i.eventDate||i.start))+'</span></span>'+
       '<span class="item-row-status '+stateClass+'">'+publishState+'</span>'+
@@ -244,8 +246,10 @@
   function publicationState(){
     if(activeEditor!=="item"||!form||form.hidden) return {text:"",cls:""};
     if(!editingOriginalId) return {text:dirty?"Новая · не опубликована":"Новая карточка",cls:"new"};
+    const current=editingOriginalId?items.find(x=>x.id===editingOriginalId):null;
     const status=form.elements.status ? form.elements.status.value : "active";
     const visible=form.elements.visible ? form.elements.visible.checked : true;
+    if(current&&current.archived===true) return {text:dirty?"В архиве · есть изменения":"В архиве",cls:"archived"};
     if(status==="draft") return {text:dirty?"Черновик · есть изменения":"Черновик · не опубликован",cls:"draft"};
     if(!visible) return {text:dirty?"Скрыта · есть изменения":"Скрыта с сайта",cls:"hidden"};
     return {text:dirty?"Опубликована · есть изменения":"Опубликована",cls:dirty?"dirty":"published"};
@@ -282,8 +286,18 @@
     enterMobileEditor();
     $("#editorMode").textContent=isNew?"Новая карточка":"Редактирование";
     $("#editorTitle").textContent=isNew?"Добавление":item.title;
-    $("#deleteBtn").hidden=isNew;
+    const archiveBtn=$("#archiveBtn");
+    archiveBtn.hidden=isNew;
+    archiveBtn.textContent=item.archived===true?"Вернуть":"В архив";
+    archiveBtn.className=item.archived===true?"ghost-btn restore":"ghost-btn archive";
     $("#duplicateBtn").hidden=isNew;
+    const submitButtons=$('button[type="submit"]',form);
+    if(item.archived===true){
+      submitButtons.forEach(b=>b.textContent="Сохранить в архиве");
+    }else{
+      if(submitButtons[0]) submitButtons[0].textContent=isNew?"Опубликовать":"Сохранить и опубликовать";
+      if(submitButtons[1]) submitButtons[1].textContent="Опубликовать изменения";
+    }
     setVal("id",isNew?"":item.id);
     form.elements.id.readOnly=!isNew;
     setVal("type",item.type||"task");
@@ -573,7 +587,7 @@
       editingOriginalId=savedItem.id;
       form.elements.id.value=savedItem.id;
       form.elements.id.readOnly=true;
-      $("#deleteBtn").hidden=false;
+      $("#archiveBtn").hidden=false;
       $("#duplicateBtn").hidden=false;
       $("#editorMode").textContent="Редактирование";
       $("#editorTitle").textContent=savedItem.title;
@@ -630,25 +644,32 @@
     }
   }
 
-  async function deleteCurrent(){
+  async function toggleArchiveCurrent(){
     if(!editingOriginalId) return;
-    const item=items.find(x=>x.id===editingOriginalId);
-    if(!confirm('Удалить карточку «'+(item?item.title:editingOriginalId)+'»?')) return;
+    const idx=items.findIndex(x=>x.id===editingOriginalId);
+    if(idx<0) return;
+    const item=items[idx];
+    const restoring=item.archived===true;
+    const question=restoring
+      ? 'Вернуть карточку «'+item.title+'» из архива?'
+      : 'Переместить карточку «'+item.title+'» в архив? Она исчезнет с публичного сайта, но останется в админ-панели.';
+    if(!confirm(question)) return;
     try{
-      await api({action:"delete-item",id:editingOriginalId});
-      for(const a of (item&&item.attachments)||[]){
-        if(!a.path) continue;
-        try{await api({action:"delete-file",path:a.path})}catch{}
-      }
-      items=items.filter(x=>x.id!==editingOriginalId);
-      editingOriginalId=null;
-      activeEditor="none";
-      form.hidden=true;
-      $("#editorEmpty").hidden=false;
-      leaveMobileEditor();
-      renderList();
-      toast("Карточка удалена");
-    }catch(err){ toast(err.message); }
+      const result=await api({action:restoring?"restore-item":"archive-item",id:editingOriginalId});
+      items[idx]=structuredClone(result.item);
+      $("#itemPublishFilter").value=restoring?"all":"archived";
+      fillForm(structuredClone(result.item),false);
+      $("#saveState").textContent=restoring?"Карточка возвращена. Сайт обновляется…":"Карточка в архиве. Сайт обновляется…";
+      toast(restoring?"Карточка возвращена из архива":"Карточка перемещена в архив");
+      const live=await waitForLiveVersion(result.updatedAt,n=>{
+        $("#saveState").textContent=n<3?"Vercel обновляет сайт…":"Проверяем опубликованную версию…";
+      });
+      $("#saveState").textContent=live
+        ? (restoring?"Карточка снова доступна на сайте":"Карточка скрыта с сайта и сохранена в архиве")
+        : "Изменение сохранено в GitHub. Публикация ещё обновляется…";
+    }catch(err){
+      toast(err.message);
+    }
   }
   function duplicateCurrent(){
     const item=readForm();
@@ -766,7 +787,7 @@
   resourcesForm.addEventListener("submit",saveResources);
   $("#previewBtn").addEventListener("click",previewItem);
   $("#settingsPreviewBtn").addEventListener("click",previewSettings);
-  $("#deleteBtn").addEventListener("click",deleteCurrent);
+  $("#archiveBtn").addEventListener("click",toggleArchiveCurrent);
   $("#duplicateBtn").addEventListener("click",duplicateCurrent);
   window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 
