@@ -1,10 +1,10 @@
 window.DASHBOARD_DATA = {
   "meta": {
     "title": "Первые · Кемский округ",
-    "updatedAt": "2026-11-05T05:19:51.125Z",
+    "updatedAt": "2026-11-05T05:51:27.732Z",
     "editorialNote": "Даты и формулировки проверены по официальным рекомендациям и рабочей переписке первичных организаций. Если срок в источнике не указан, карточка не получает выдуманный дедлайн.",
     "site": {
-      "announcementEnabled": "true",
+      "announcementEnabled": "false",
       "announcementTitle": "Добрые дела октября",
       "announcementText": "Приглашаем присоединиться к волонтёрским активностям — выберите вакансию и подайте заявку.",
       "announcementUrl": "https://dobro.ru/event/11807142",
