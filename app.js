@@ -77,7 +77,11 @@
       put("#announcementText",s.announcementText);
       const link=$("#announcementLink");
       if(link){
-        if(/^https?:\/\//i.test(s.announcementUrl||"")) link.href=s.announcementUrl;
+        const target=String(s.announcementUrl||"").trim();
+        const hasUrl=/^https?:\/\//i.test(target);
+        if(hasUrl) link.href=target; else link.removeAttribute("href");
+        link.hidden=!hasUrl;
+        link.style.display=hasUrl?"":"none";
         if(s.announcementButton) link.textContent=s.announcementButton+" ↗";
       }
     }
@@ -154,21 +158,28 @@
   }
 
   function renderProjects(){
-    const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"]];
+    const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"],["past","Прошедшие"]];
     $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>isPublic(i)&&!expired(i)&&["action","project","event"].includes(i.type));
-    if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter);
-    if(projectFilter==="upcoming") list=list.filter(i=>startsInFuture(i)||(!i.start&&["upcoming","soon"].includes(i.status)));
-    if(projectFilter==="active") list=list.filter(i=>isOngoing(i)&&!startsInFuture(i));
-    list.sort((a,b)=>(parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0)));
+    let list=items.filter(i=>isPublic(i)&&["action","project","event"].includes(i.type));
+    if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter&&!expired(i));
+    if(projectFilter==="upcoming") list=list.filter(i=>!expired(i)&&(startsInFuture(i)||(!i.start&&["upcoming","soon"].includes(i.status))));
+    if(projectFilter==="active") list=list.filter(i=>!expired(i)&&isOngoing(i)&&!startsInFuture(i));
+    if(projectFilter==="past") list=list.filter(i=>expired(i));
+    list.sort((a,b)=>{
+      const aPast=Boolean(expired(a)),bPast=Boolean(expired(b));
+      if(aPast!==bPast) return Number(aPast)-Number(bPast);
+      if(aPast) return (endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start));
+      return (parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0));
+    });
     const icons={action:"✦",project:"◇",event:"◉"};
 
     $("#projectList").innerHTML=list.map(i=>{
       const start=i.start?fmt(i.start):"";
       const end=i.deadline?fmt(i.deadline):"";
       const secondary=i.reportDeadline?"Публикация до "+fmt(i.reportDeadline):(end&&end!==start?"До "+end:deadlineLabel(i));
-      const extra=(i.formats||[]).length?i.formats.length+" формата участия":((i.steps||[]).length?i.steps.length+" шагов":"");
-      return '<button class="project-card-compact '+i.type+'" data-open="'+i.id+'">'
+      const past=Boolean(expired(i));
+      const extra=past?"Завершено · материалы доступны":((i.formats||[]).length?i.formats.length+" формата участия":((i.steps||[]).length?i.steps.length+" шагов":""));
+      return '<button class="project-card-compact '+i.type+(past?" is-past":"")+'" data-open="'+i.id+'">'
         +'<span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></span>'
         +'<span class="project-category">'+esc(i.category)+'</span>'
         +'<strong class="project-compact-title">'+esc(i.title)+'</strong>'
@@ -182,11 +193,12 @@
   function renderCalendar(){
     const monthNom=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     const monthSet=new Set([currentYm]);
+    const earliestMonth="2026-09";
     items.filter(isPublic).forEach(i=>{
       const dates=i.calendarDisplayDate?[i.calendarDisplayDate]:[i.start,i.deadline,i.eventDate].filter(Boolean);
       dates.forEach(d=>{
         const key=d.slice(0,7);
-        if(key>=currentYm) monthSet.add(key);
+        if(key>=earliestMonth) monthSet.add(key);
       });
     });
     const monthKeys=[...monthSet].sort();
