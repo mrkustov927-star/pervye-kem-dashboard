@@ -175,3 +175,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
 .history-shortcuts span{font-size:13px;color:var(--muted);font-weight:700;margin-right:5px}
 .history-shortcuts a{display:inline-flex;align-items:center;padding:9px 15px;border:1px solid #cbd8ee;border-radius:999px;color:var(--blue);background:#f4f8ff;font-size:13px;font-weight:900}
 .history-shortcuts a:hover,.history-shortcuts a:focus-visible{border-color:var(--blue);background:#e7efff}
+
+/* Example of October volunteering on Dobro.rf; this is intentionally not an active call for applicants. */
+.kindness-banner-example{background:linear-gradient(90deg,#f0f5ff 0%,#f9fbff 58%,#fff 100%)}
+.kindness-banner-example .kindness-banner-action{background:var(--blue);box-shadow:0 8px 20px rgba(51,102,204,.14)}
+.kindness-banner-example .kindness-banner-action:hover{box-shadow:0 10px 24px rgba(51,102,204,.23)}
