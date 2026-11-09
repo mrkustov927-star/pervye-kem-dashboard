@@ -34,6 +34,7 @@ jobs:
 
           python3 <<'PY'
           from pathlib import Path
+          from os import environ
 
           index = Path("_site/index.html")
           html = index.read_text(encoding="utf-8")
@@ -45,6 +46,11 @@ jobs:
               '>Вход для администратора</a>',
               '>Администрирование ↗</a>'
           )
+          # Force fresh data and scripts on every published commit, including on phones.
+          version = environ["GITHUB_SHA"][:12]
+          for asset in ("styles.css", "data.js", "app.js"):
+              html = html.replace(f'href="{asset}"', f'href="{asset}?v={version}"')
+              html = html.replace(f'src="{asset}"', f'src="{asset}?v={version}"')
           index.write_text(html, encoding="utf-8")
 
           app = Path("_site/app.js")
