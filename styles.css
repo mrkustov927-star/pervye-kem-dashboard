@@ -165,3 +165,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
   .kindness-banner-copy span:not(.kindness-mark){margin-top:3px;font-size:12px}
   .kindness-banner-action{width:100%;min-height:42px}
 }
+
+/* Past public cards stay available without looking like active deadlines. */
+.project-card-compact.is-past{border-color:#e1e5ec;background:#f8f9fc}
+.project-card-compact.is-past .project-compact-hint{background:#eef0f4;color:#536074}
