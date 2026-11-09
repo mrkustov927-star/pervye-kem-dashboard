@@ -10,7 +10,8 @@
   const monthNames=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   let taskFilter="all";
-  let projectFilter="all";
+  const requestedMonth=new URLSearchParams(window.location.search).get("month");
+  let projectFilter=["2026-09","2026-10"].includes(requestedMonth)?"month-"+requestedMonth:"all";
   const currentYm=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   let calendarMonth=currentYm;
   let lastFocused=null;
@@ -158,9 +159,11 @@
   }
 
   function renderProjects(){
-    const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"],["past","Прошедшие"]];
+    const filters=[["all","Все"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"],["past","Прошедшие"],["month-2026-09","Сентябрь 2026"],["month-2026-10","Октябрь 2026"]];
     $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>isPublic(i)&&["action","project","event"].includes(i.type));
+    const historyMonth=projectFilter.startsWith("month-")?projectFilter.slice(6):"";
+    let list=items.filter(i=>isPublic(i)&&(historyMonth?["task","action","project","event"].includes(i.type):["action","project","event"].includes(i.type)));
+    if(historyMonth) list=list.filter(i=>[i.start,i.deadline,i.eventDate,i.reportDeadline,i.calendarDisplayDate].some(d=>d&&d.slice(0,7)===historyMonth));
     if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter&&!expired(i));
     if(projectFilter==="upcoming") list=list.filter(i=>!expired(i)&&(startsInFuture(i)||(!i.start&&["upcoming","soon"].includes(i.status))));
     if(projectFilter==="active") list=list.filter(i=>!expired(i)&&isOngoing(i)&&!startsInFuture(i));
@@ -171,7 +174,7 @@
       if(aPast) return (endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start));
       return (parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0));
     });
-    const icons={action:"✦",project:"◇",event:"◉"};
+    const icons={action:"✦",project:"◇",event:"◉",task:"✓"};
 
     $("#projectList").innerHTML=list.map(i=>{
       const start=i.start?fmt(i.start):"";
