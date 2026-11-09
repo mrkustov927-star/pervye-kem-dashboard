@@ -169,3 +169,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{o
 /* Past public cards stay available without looking like active deadlines. */
 .project-card-compact.is-past{border-color:#e1e5ec;background:#f8f9fc}
 .project-card-compact.is-past .project-compact-hint{background:#eef0f4;color:#536074}
+
+/* Direct links to historic September/October cards. */
+.history-shortcuts{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:0 0 17px}
+.history-shortcuts span{font-size:13px;color:var(--muted);font-weight:700;margin-right:5px}
+.history-shortcuts a{display:inline-flex;align-items:center;padding:9px 15px;border:1px solid #cbd8ee;border-radius:999px;color:var(--blue);background:#f4f8ff;font-size:13px;font-weight:900}
+.history-shortcuts a:hover,.history-shortcuts a:focus-visible{border-color:var(--blue);background:#e7efff}
