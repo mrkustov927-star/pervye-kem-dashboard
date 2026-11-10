@@ -6,8 +6,8 @@ window.DASHBOARD_DATA = {
     "site": {
       "announcementEnabled": "true",
       "announcementTitle": "Добрые дела ноября",
-      "announcementText": "Приглашаем присоединиться к добровольческим активностям ноября. Ссылка на вакансии на Добро.рф будет добавлена после открытия набора.",
-      "announcementUrl": "",
+      "announcementText": "Приглашаем присоединиться к добровольческим активностям ноября. Подайте заявку на Добро.рф.",
+      "announcementUrl": "https://dobro.ru/event/11965050",
       "announcementButton": "Подать заявку",
       "archiveTitle": "Прошедшие задания и мероприятия (сентябрь — октябрь)"
     }
