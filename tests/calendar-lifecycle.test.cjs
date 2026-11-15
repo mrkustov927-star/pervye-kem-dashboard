@@ -79,8 +79,8 @@ test('all source items and links have valid identities and no unsafe schemes',()
     for(const l of [...(i.links||[]),...(i.materials||[])])assert.match(l.url,/^https?:\/\//,i.id);
   }
 });
-test('primary competition milestones from the regulation are represented',()=>{
-  const entries=load(data.items).calendarEntries();for(const date of ['2026-11-16','2026-11-22','2027-02-28','2027-03-16','2027-03-31','2027-04-15','2027-06-07','2027-11-30'])assert.ok(entries.some(e=>e.item.id==='primary-contest'&&e.date===date),date);
+test('primary competition milestones and the updated document deadline are represented',()=>{
+  const entries=load(data.items).calendarEntries();for(const date of ['2026-11-16','2026-11-23','2027-02-28','2027-03-16','2027-03-31','2027-04-15','2027-06-07','2027-11-30'])assert.ok(entries.some(e=>e.item.id==='primary-contest'&&e.date===date),date);
 });
 test('saving an ordinary admin form preserves stages, while explicit clearing remains possible',()=>{
   const code=fs.readFileSync(path.join(root,'api/admin.js'),'utf8');
@@ -94,6 +94,15 @@ test('saving an ordinary admin form preserves stages, while explicit clearing re
   assert.equal(context.preserveStages(before,context.cleanItem(explicit),explicit).stages.length,0);
 });
 test('calendar export uses the next actual deadline and preserves a pending report',()=>{
-  const api=load(data.items);const primary=data.items.find(i=>i.id==='primary-contest');assert.equal(api.calendarEventFor(primary).date,'2026-11-22');
+  const api=load(data.items);const primary=data.items.find(i=>i.id==='primary-contest');assert.equal(api.calendarEventFor(primary).date,'2026-11-23');
   const event={id:'event',type:'event',eventDate:'2026-11-14',reportDeadline:'2026-11-20'};assert.equal(load([event]).calendarEventFor(event).date,'2026-11-20');
+});
+
+test('an unconfirmed moderation day is not published as an exact deadline',()=>{
+  const item=data.items.find(i=>i.id==='primary-contest');
+  assert.equal(item.deadline,'2026-11-23');
+  const moderation=item.stages.find(s=>s.id==='moderation');
+  assert.equal(moderation.end,undefined);
+  assert.equal(moderation.monthStart,'2026-11');
+  assert.ok(!load(data.items).calendarEntries().some(e=>e.stageId==='moderation'));
 });
