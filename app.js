@@ -155,12 +155,41 @@
     setSectionCount("favorites",cards.length);
     $("#favoritesList").innerHTML=cards.join("")||'<div class="empty">Пока здесь пусто. Добавьте нужную карточку или документ звёздочкой ☆.</div>';
   }
+  function calendarLabel(title,kind,{label,type,stage=false}={}){
+    if(typeof label==="string"&&label.trim())return label.trim();
+    const text=String(title||"").toLowerCase();
+    if(kind==="report")return "Публикация и отчёт";
+    if(kind==="registration")return /документ/.test(text)?"Приём документов":/материал|видео/.test(text)?"Приём материалов":"Приём заявок";
+    if(/информаци.*(?:итогов|финал)|анонс.*финал/.test(text))return "Информация о финале";
+    if(/фиксаци.*активност/.test(text))return "Фиксация активности";
+    if(/модерац|экспертиз/.test(text))return "Модерация";
+    if(/подведени.*итог|(?:^|[ :—])итоги|формировани.*рейтинг|публикаци.*рейтинг|определени.*приз[её]р/.test(text))return "Подведение итогов";
+    if(/муниципальн.*этап/.test(text))return "Муниципальные этапы";
+    if(/региональн.*этап/.test(text))return "Региональные этапы";
+    if(/школьн.*этап/.test(text))return "Школьные этапы";
+    if(/окружн.*(?:этап|отбор)/.test(text))return "Окружные этапы";
+    if(/федеральн.*(?:этап|отбор)/.test(text))return "Федеральные этапы";
+    if(/финал/.test(text))return "Финал";
+    if(/общий зач[её]т/.test(text))return "Общий зачёт";
+    if(/основной этап/.test(text))return "Основной этап";
+    if(/сертификат/.test(text))return "Выдача сертификатов";
+    if(/регламент/.test(text))return "Публикация регламента";
+    if(/практическ.*активност|завершить 12 активност/.test(text))return "Практические активности";
+    if(/задани.*отч[её]т/.test(text))return "Задания и отчёты";
+    if(/конкурсн.*задани/.test(text))return "Конкурсные задания";
+    if(/сл[её]т/.test(text))return /региональн/.test(text)?"Региональный слёт":"Слёт";
+    if(/мастер-класс|обучени|школа актива/.test(text))return "Обучение";
+    if(/выбор/.test(text))return "Выборы";
+    if(kind==="concept")return type==="action"?"Начало акции":"Старт проекта";
+    if(kind==="task")return type==="action"?"Завершение акции":"Срок выполнения";
+    return stage?"Этап конкурса":"Мероприятие";
+  }
   function calendarEntries(){
     const events=[];
     const labels={concept:"Концепция",task:"Задача",event:"Мероприятие",registration:"Регистрация",report:"Публикация / отчёт"};
     const push=(date,item,kind,extra={})=>{
       if(!parseDate(date)||!labels[kind])return;
-      const entry={date,item,kind,label:labels[kind],title:item.title,...extra};
+      const entry={date,item,kind,label:calendarLabel(item.title,kind,{type:item.type}),title:item.title,...extra};
       const index=events.findIndex(e=>e.date===date&&e.item.id===item.id&&e.kind===kind&&(!e.stageId||!extra.stageId||e.stageId===extra.stageId));
       if(index<0)events.push(entry);else if(extra.stageId)events[index]=entry;
     };
@@ -181,7 +210,7 @@
       stagesFor(i).forEach(stage=>{
         const linked=items.find(x=>x.id===stage.itemId&&isPublic(x));
         const target=linked||i;
-        const extra={stageId:stage.id,stageOwner:i.id,title:stage.title,tentative:stage.tentative===true};
+        const extra={stageId:stage.id,stageOwner:i.id,title:stage.title,label:calendarLabel(stage.title,stage.kind||"event",{label:stage.label,type:i.type,stage:true}),tentative:stage.tentative===true};
         if(stage.start)push(stage.start,target,stage.kind||"event",{...extra,title:stage.title+(stage.end&&stage.end!==stage.start?" — начало":"")});
         if(stage.end&&stage.end!==stage.start)push(stage.end,target,stage.kind||"event",{...extra,title:stage.title+(stage.start?" — завершение":"")});
       });
@@ -208,18 +237,17 @@
   }
   function renderWeek(){
     const entries=[];
-    const labels={concept:"Начало акции",task:"Срок выполнения",event:"Мероприятие",registration:"Регистрация",report:"Публикация / отчёт"};
-    const push=(i,date,kind)=>{
+    const push=(i,date,kind,label)=>{
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return;
       const left=days(date);if(left<0||left>6)return;
-      if(!entries.some(e=>e.item.id===i.id&&e.date===date&&e.kind===kind&&e.item.title===i.title))entries.push({item:i,date,kind,left});
+      if(!entries.some(e=>e.item.id===i.id&&e.date===date&&e.kind===kind&&e.item.title===i.title))entries.push({item:i,date,kind,left,label});
     };
-    calendarEntries().filter(e=>e.item.status!=="done").forEach(e=>push({...e.item,title:e.title},e.date,e.kind));
+    calendarEntries().filter(e=>e.item.status!=="done").forEach(e=>push({...e.item,title:e.title},e.date,e.kind,e.label));
     entries.sort((a,b)=>a.left-b.left||a.item.title.localeCompare(b.item.title,"ru"));
     const last=addDaysIso(todayMoscow,6);
     $("#weekRange").textContent=fmt(todayMoscow)+" — "+fmt(last)+" · ближайшие 7 дней";
     setSectionCount("week",entries.length);
-    $("#weekList").innerHTML=entries.map(e=>'<button class="week-entry" data-open="'+esc(e.item.id)+'"><span class="week-date">'+esc(fmtShort(e.date))+'</span><span class="week-copy"><small>'+esc(labels[e.kind]||"Задача")+'</small><strong>'+esc(e.item.title)+'</strong></span><span class="week-countdown '+(e.left<=1?"soon":"")+'">'+(e.left===0?"Сегодня":e.left===1?"Завтра":"Через "+e.left+" дн.")+'</span><span class="week-arrow" aria-hidden="true">→</span></button>').join("")||'<div class="empty">На ближайшие 7 дней в календаре пока нет событий и сроков. Все материалы доступны в разделах ниже.</div>';
+    $("#weekList").innerHTML=entries.map(e=>'<button class="week-entry" data-open="'+esc(e.item.id)+'"><span class="week-date">'+esc(fmtShort(e.date))+'</span><span class="week-copy"><small>'+esc(e.label)+'</small><strong>'+esc(e.item.title)+'</strong></span><span class="week-countdown '+(e.left<=1?"soon":"")+'">'+(e.left===0?"Сегодня":e.left===1?"Завтра":"Через "+e.left+" дн.")+'</span><span class="week-arrow" aria-hidden="true">→</span></button>').join("")||'<div class="empty">На ближайшие 7 дней в календаре пока нет событий и сроков. Все материалы доступны в разделах ниже.</div>';
   }
   function setupSidebar(){
     const sections=$$("main > section[id]").filter(el=>el.id!=="top");
@@ -444,7 +472,7 @@
     }).join("")||'<div class="empty">В этом месяце нет событий с точной датой.</div>';
     const stages=stagesInMonth(calendarMonth);
     $("#calendarStageCount").textContent=stages.length;
-    $("#calendarStages").innerHTML=stages.map(({item,stage})=>'<button class="calendar-stage-row" data-open="'+esc(item.id)+'"><span><b>'+esc(stage.title)+'</b><small>'+esc(item.title)+'</small></span><span>'+esc(stagePeriod(stage))+'</span></button>').join("")||'<div class="empty">Этапы с установленными сроками на этот месяц не указаны.</div>';
+    $("#calendarStages").innerHTML=stages.map(({item,stage})=>'<button class="calendar-stage-row" data-open="'+esc(item.id)+'"><span><em class="calendar-stage-type">'+esc(calendarLabel(stage.title,stage.kind,{label:stage.label,type:item.type,stage:true}))+'</em><b>'+esc(stage.title)+'</b><small>'+esc(item.title)+'</small></span><span>'+esc(stagePeriod(stage))+'</span></button>').join("")||'<div class="empty">Этапы с установленными сроками на этот месяц не указаны.</div>';
   }
 
   function renderDocs(){
@@ -714,4 +742,5 @@
     if(deepLinkedCard)setTimeout(()=>openModal(deepLinkedCard),0);
   });
 })();
+
 

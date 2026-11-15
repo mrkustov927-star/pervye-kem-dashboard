@@ -132,7 +132,7 @@ function cleanStages(v){
   const date=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||"")?x:undefined;
   const month=x=>/^\d{4}-(0[1-9]|1[0-2])$/.test(x||"")?x:undefined;
   return v.slice(0,60).map(raw=>({
-    id:safeId(raw?.id,"stage"),title:cleanString(raw?.title,300),
+    id:safeId(raw?.id,"stage"),title:cleanString(raw?.title,300),label:cleanString(raw?.label,100),
     start:date(raw?.start),end:date(raw?.end),monthStart:month(raw?.monthStart),monthEnd:month(raw?.monthEnd),
     kind:ALLOWED_CALENDAR_KINDS.has(raw?.kind)?raw.kind:"event",itemId:cleanString(raw?.itemId,90).replace(/[^a-zA-Z0-9_-]/g,""),
     tentative:raw?.tentative===true,note:cleanString(raw?.note,1600)
@@ -445,3 +445,4 @@ module.exports = async function handler(req,res) {
     return json(res,500,{ok:false,error:e.message || "Ошибка сохранения."});
   }
 };
+

@@ -364,6 +364,7 @@ details[open]>.section-summary .section-chevron:before,details[open]>.hero-visua
 .calendar-stage-row b,.calendar-stage-row small{display:block}
 .calendar-stage-row b{font-size:13px;line-height:1.4}.calendar-stage-row small{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.4}
 .calendar-stage-row>span:last-child{font-size:12px;line-height:1.5;color:#486184}
+.calendar-stage-type{display:inline-block;margin-bottom:6px;padding:3px 7px;border-radius:7px;background:#edf4ff;color:var(--blue);font-size:10px;font-style:normal;font-weight:850;line-height:1.4}
 .day-event.is-past{opacity:.7}
 .day-more{padding:0;font-size:10px}.day-more>summary{cursor:pointer;padding:6px 3px;color:var(--blue)}.day-more .day-event{margin-top:6px}
 .stage-timeline ol{display:grid;gap:10px;margin:15px 0 0;padding-left:21px}
@@ -376,5 +377,6 @@ details[open]>.section-summary .section-chevron:before,details[open]>.hero-visua
   .calendar-stage-row{grid-template-columns:1fr;gap:7px;padding:11px}
   .calendar-stage-row b{font-size:12px}.calendar-stage-row>span:last-child{font-size:11px}
 }
+
 
 

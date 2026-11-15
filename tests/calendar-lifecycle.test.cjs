@@ -6,7 +6,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const prefix=source.slice(source.indexOf('  const D='),source.indexOf('  const preferencesKey='));
-const calendar=source.slice(source.indexOf('  function calendarEntries(){'),source.indexOf('  function renderWeek(){'));
+const calendar=source.slice(source.indexOf('  function calendarLabel('),source.indexOf('  function renderWeek(){'));
 const exportHelpers=source.slice(source.indexOf('  function addDaysIso('),source.indexOf('  function googleCalendarUrl('));
 const instant='2026-11-15T10:00:00Z';
 class AuditDate extends Date{constructor(...args){super(...(args.length?args:[instant]));}static now(){return Date.parse(instant);}}
@@ -90,6 +90,7 @@ test('saving an ordinary admin form preserves stages, while explicit clearing re
   const raw={id:before.id,title:'Updated title',type:'project'};
   const saved=context.preserveStages(before,context.cleanItem(raw),raw);
   assert.equal(saved.stages.length,before.stages.length);
+  assert.equal(saved.stages[0].label,before.stages[0].label);
   const explicit={...raw,stages:[]};
   assert.equal(context.preserveStages(before,context.cleanItem(explicit),explicit).stages.length,0);
 });
@@ -108,5 +109,21 @@ test('the provisional moderation date retains its preliminary marker',()=>{
   const entry=api.calendarEntries().find(e=>e.stageId==='moderation');
   assert.equal(entry.date,'2026-11-30');
   assert.equal(entry.tentative,true);
+  assert.equal(entry.label,'Модерация');
   assert.match(api.stagePeriod(moderation),/ориентировочно/);
 });
+test('event purpose distinguishes results, municipal and regional stages',()=>{
+  const items=[
+    {id:'results',title:'Подведение итогов конкурса'},
+    {id:'municipal',title:'Муниципальный этап конкурса'},
+    {id:'regional',title:'Региональный этап конкурса'}
+  ].map(i=>({...i,type:'event',eventDate:'2027-03-01'}));
+  const entries=load(items).calendarEntries();
+  const labels=Object.fromEntries(entries.map(e=>[e.item.id,e.label]));
+  assert.deepEqual(labels,{results:'Подведение итогов',municipal:'Муниципальные этапы',regional:'Региональные этапы'});
+});
+test('an announcement of a final is not mistaken for announcing results',()=>{
+  const item={id:'final-announcement',type:'event',title:'Информация об итоговом событии',eventDate:'2027-05-15'};
+  assert.equal(load([item]).calendarEntries()[0].label,'Информация о финале');
+});
+
