@@ -7,7 +7,7 @@ const DATA_PATH = "data.js";
 const ALLOWED_TYPES = new Set(["task","project","action","event","info"]);
 const ALLOWED_PRIORITIES = new Set(["urgent","high","normal"]);
 const ALLOWED_STATUSES = new Set(["draft","new","soon","upcoming","active","done"]);
-const ALLOWED_CALENDAR_KINDS = new Set(["concept","task","event","registration"]);
+const ALLOWED_CALENDAR_KINDS = new Set(["concept","task","event","registration","report"]);
 const ALLOWED_FILE_EXTENSIONS = new Set(["pdf","doc","docx","xls","xlsx","ppt","pptx","png","jpg","jpeg","zip","rar","odt","ods"]);
 const MAX_FILE_BYTES = 2621440;
 const LOGIN_WINDOW = 10 * 60 * 1000;
@@ -127,6 +127,21 @@ function cleanCalendarMap(v) {
   }
   return out;
 }
+function cleanStages(v){
+  if(!Array.isArray(v))return [];
+  const date=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||"")?x:undefined;
+  const month=x=>/^\d{4}-(0[1-9]|1[0-2])$/.test(x||"")?x:undefined;
+  return v.slice(0,60).map(raw=>({
+    id:safeId(raw?.id,"stage"),title:cleanString(raw?.title,300),
+    start:date(raw?.start),end:date(raw?.end),monthStart:month(raw?.monthStart),monthEnd:month(raw?.monthEnd),
+    kind:ALLOWED_CALENDAR_KINDS.has(raw?.kind)?raw.kind:"event",itemId:cleanString(raw?.itemId,90).replace(/[^a-zA-Z0-9_-]/g,""),
+    tentative:raw?.tentative===true,note:cleanString(raw?.note,1600)
+  })).filter(s=>s.title&&(s.start||s.end||s.monthStart||s.monthEnd));
+}
+function preserveStages(before,incoming,raw){
+  if(before?.stages&&!Object.prototype.hasOwnProperty.call(raw||{},"stages"))incoming.stages=cleanStages(before.stages);
+  return incoming;
+}
 function cleanSettings(v) {
   const src = v && typeof v === "object" ? v : {};
   const keys = [
@@ -178,6 +193,7 @@ function cleanItem(raw) {
     calendarDisplayDate: cleanString(raw.calendarDisplayDate,10) || null,
     calendarDisplayKind: ALLOWED_CALENDAR_KINDS.has(raw.calendarDisplayKind) ? raw.calendarDisplayKind : "",
     calendarMap: cleanCalendarMap(raw.calendarMap),
+    ...(Array.isArray(raw.stages)?{stages:cleanStages(raw.stages)}:{}),
     audience: cleanStringArray(raw.audience, 20, 100),
     status,
     category: cleanString(raw.category, 180) || "Другое",
@@ -361,6 +377,8 @@ module.exports = async function handler(req,res) {
       data.items = Array.isArray(data.items) ? data.items : [];
       const idx = data.items.findIndex(x=>x.id===incoming.id);
       const before=idx>=0?data.items[idx]:null;
+      // The existing editor has no stage repeater yet; preserve the timeline on an ordinary save.
+      preserveStages(before,incoming,body.item);
       if(before && before.archived===true){
         incoming.archived=true;
         incoming.archivedAt=before.archivedAt||new Date().toISOString();

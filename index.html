@@ -7,7 +7,7 @@
   <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
   <title>Первые · Кемский округ — рабочий кабинет</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=20261115-layout-fix" />
+  <link rel="stylesheet" href="styles.css?v=20261115-archive-audit" />
 </head>
 <body>
   <header class="site-header">
@@ -159,6 +159,7 @@
             <span><i class="legend-dot task"></i> Задача</span>
             <span><i class="legend-dot event"></i> Мероприятие</span>
             <span><i class="legend-dot registration"></i> Регистрация</span>
+            <span><i class="legend-dot report"></i> Отчёт</span>
           </div>
         </div>
         <div class="month-switch" id="calendarMonths"></div>
@@ -166,6 +167,10 @@
           <div class="calendar-grid" id="calendarGrid"></div>
         </div>
         <div class="mobile-agenda" id="calendarAgenda"></div>
+        <details class="calendar-stages" open>
+          <summary>Этапы конкурсов в выбранном месяце <span id="calendarStageCount"></span></summary>
+          <div id="calendarStages"></div>
+        </details>
           </div>
         </details>
       </div>
@@ -176,16 +181,12 @@
         <details class="section-disclosure" data-section-disclosure open>
           <summary class="section-summary">
             <span class="section-number red" aria-hidden="true">05</span>
-            <h2 class="section-label"><span id="projects-title">Акции и проекты</span><small id="projectsSubtitle">Текущие и прошедшие акции, события и проекты</small></h2>
+            <h2 class="section-label"><span id="projects-title">Акции и проекты</span><small id="projectsSubtitle">Текущие и предстоящие акции, события и проекты</small></h2>
             <span class="section-count" data-section-count="projects"></span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
-        <div class="history-shortcuts" aria-label="Архив мероприятий по месяцам">
-          <span>Карточки сентября и октября:</span>
-          <a href="?month=2026-09#projects">Сентябрь 2026</a>
-          <a href="?month=2026-10#projects">Октябрь 2026</a>
-        </div>
+        <p class="section-help">Завершённые события и материалы доступны в <a href="#archive">архиве мероприятий ↓</a>.</p>
         <div class="filters" id="projectFilters"></div>
         <div class="project-grid" id="projectList"></div>
           </div>
@@ -227,8 +228,9 @@
 
     <section class="archive-section" id="archive">
       <div class="wrap">
-        <details class="archive-box section-disclosure" data-section-disclosure open>
+        <details class="archive-box section-disclosure" data-section-disclosure>
           <summary class="section-summary"><span class="section-number blue" aria-hidden="true">08</span><h2 class="section-label"><span id="archiveTitle">Архив мероприятий</span><small id="archiveSubtitle">Карточки и материалы завершённых событий</small></h2><span class="section-count" data-section-count="archive"></span><span class="section-chevron" aria-hidden="true"></span></summary>
+          <div class="archive-tools"><p>Завершённые мероприятия, акции и задания. Выберите месяц, чтобы найти нужные материалы.</p><div class="filters" id="archiveFilters" aria-label="Месяц завершённых мероприятий"></div></div>
           <div class="archive-grid" id="archiveList"></div>
         </details>
       </div>
@@ -260,7 +262,8 @@
   <div class="search-panel" id="searchPanel" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115-character-first"></script>
-  <script src="app.js?v=20261115-layout-fix"></script>
+  <script src="data.js?v=20261115-archive-audit"></script>
+  <script src="app.js?v=20261115-archive-audit"></script>
 </body>
 </html>
+
