@@ -98,11 +98,15 @@ test('calendar export uses the next actual deadline and preserves a pending repo
   const event={id:'event',type:'event',eventDate:'2026-11-14',reportDeadline:'2026-11-20'};assert.equal(load([event]).calendarEventFor(event).date,'2026-11-20');
 });
 
-test('an unconfirmed moderation day is not published as an exact deadline',()=>{
+test('the provisional moderation date retains its preliminary marker',()=>{
   const item=data.items.find(i=>i.id==='primary-contest');
   assert.equal(item.deadline,'2026-11-23');
   const moderation=item.stages.find(s=>s.id==='moderation');
-  assert.equal(moderation.end,undefined);
-  assert.equal(moderation.monthStart,'2026-11');
-  assert.ok(!load(data.items).calendarEntries().some(e=>e.stageId==='moderation'));
+  assert.equal(moderation.end,'2026-11-30');
+  assert.equal(moderation.tentative,true);
+  const api=load(data.items);
+  const entry=api.calendarEntries().find(e=>e.stageId==='moderation');
+  assert.equal(entry.date,'2026-11-30');
+  assert.equal(entry.tentative,true);
+  assert.match(api.stagePeriod(moderation),/ориентировочно/);
 });
