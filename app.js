@@ -36,6 +36,32 @@
     return !e||e>=now;
   };
 
+  // Native disclosures keep the full page readable without JavaScript as well.
+  const compactScreen=window.matchMedia("(max-width: 820px)");
+  const sectionDisclosures=()=>$$('[data-section-disclosure]');
+  function revealSection(hash){
+    if(!/^#[a-z-]+$/.test(hash)) return;
+    const section=$(hash);
+    const disclosure=section&&$("[data-section-disclosure]",section);
+    if(disclosure) disclosure.open=true;
+  }
+  function adaptSections(){
+    sectionDisclosures().forEach(el=>{el.open=!compactScreen.matches});
+    const deadlines=$("#heroDeadlines");
+    if(deadlines) deadlines.open=!compactScreen.matches;
+    revealSection(location.hash);
+    if(requestedMonth&&!location.hash) revealSection("#projects");
+  }
+  function setSectionCount(id,count){
+    const el=$('[data-section-count="'+id+'"]');
+    if(el){el.textContent=count;el.setAttribute("aria-label","Количество записей: "+count)}
+  }
+  run("responsive-sections",()=>{
+    adaptSections();
+    compactScreen.addEventListener("change",adaptSections);
+    window.addEventListener("hashchange",()=>revealSection(location.hash));
+  });
+
   function renderFreshness(){
     const el=$("#siteUpdatedAt");
     if(!el) return;
@@ -142,6 +168,7 @@
     if(taskFilter==="report") list=list.filter(i=>(i.deliverables||[]).length||i.publication||i.reportDeadline||(i.badges||[]).some(b=>/отч/i.test(b)));
     if(taskFilter==="schools") list=list.filter(i=>(i.audience||[]).includes("schools"));
     list.sort((a,b)=>(parseDate(a.deadline)||new Date(2100,0))-(parseDate(b.deadline)||new Date(2100,0)));
+    setSectionCount("now",list.length);
 
     $("#taskList").innerHTML=list.map(i=>{
       const d=i.deadline?parseDate(i.deadline):null;
@@ -175,6 +202,7 @@
       return (parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0));
     });
     const icons={action:"✦",project:"◇",event:"◉",task:"✓"};
+    setSectionCount("projects",list.length);
 
     $("#projectList").innerHTML=list.map(i=>{
       const start=i.start?fmt(i.start):"";
@@ -263,6 +291,7 @@
 
     const order={concept:0,registration:1,event:2,task:3};
     events.sort((a,b)=>parseDate(a.date)-parseDate(b.date)||(order[a.kind]??9)-(order[b.kind]??9));
+    setSectionCount("calendar",events.length);
 
     let html=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>'<div class="calendar-weekday">'+x+'</div>').join("");
     for(let z=0;z<42;z++){
@@ -287,6 +316,7 @@
 
   function renderDocs(){
     const docs=(D.documents||[]).filter(d=>d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))));
+    setSectionCount("docs",docs.length);
     $("#docsList").innerHTML=docs.map(d=>{
       const action=d.itemId
         ? '<button data-open="'+d.itemId+'">Открыть →</button>'
@@ -298,6 +328,7 @@
   function renderUpdates(){
     const list=Array.isArray(D.updates)?[...D.updates]:[];
     list.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    setSectionCount("updates",Math.min(list.length,5));
     $("#updatesList").innerHTML=list.slice(0,5).map(u=>{
       const d=u.date?new Date(u.date):null;
       const date=d&&!Number.isNaN(d.getTime())?d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",timeZone:"Europe/Moscow"}):"";
@@ -307,6 +338,7 @@
 
   function renderArchive(){
     const list=items.filter(i=>isPublic(i)&&expired(i)).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
+    setSectionCount("archive",list.length);
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
   }
 
@@ -420,6 +452,7 @@
     const calendarActions=cal?'<section class="calendar-add"><div><span>Не пропустить дату</span><strong>Добавить в свой календарь</strong></div><div class="calendar-add-actions"><a href="'+safeUrl(googleCalendarUrl(i))+'" target="_blank" rel="noopener" class="google-calendar-btn">Google Calendar ↗</a><button type="button" data-apple-calendar="'+i.id+'" class="apple-calendar-btn">Apple Calendar / .ics ↓</button></div></section>':"";
     $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
     lastFocused=document.activeElement;
+    $("#searchPanel").hidden=true;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
     const url=new URL(location.href);
@@ -458,6 +491,8 @@
   }
 
   document.addEventListener("click",e=>{
+    const anchor=e.target.closest('a[href^="#"]');
+    if(anchor) revealSection(anchor.getAttribute("href"));
     let x=e.target.closest("[data-open]"); if(x){openModal(x.dataset.open);return}
     x=e.target.closest("[data-task-filter]"); if(x){taskFilter=x.dataset.taskFilter;renderTasks();return}
     x=e.target.closest("[data-project-filter]"); if(x){projectFilter=x.dataset.projectFilter;renderProjects();return}

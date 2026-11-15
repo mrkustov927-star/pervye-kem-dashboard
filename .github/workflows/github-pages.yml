@@ -35,6 +35,7 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
           from os import environ
+          import re
 
           index = Path("_site/index.html")
           html = index.read_text(encoding="utf-8")
@@ -49,8 +50,11 @@ jobs:
           # Force fresh data and scripts on every published commit, including on phones.
           version = environ["GITHUB_SHA"][:12]
           for asset in ("styles.css", "data.js", "app.js"):
-              html = html.replace(f'href="{asset}"', f'href="{asset}?v={version}"')
-              html = html.replace(f'src="{asset}"', f'src="{asset}?v={version}"')
+              html = re.sub(
+                  r'((?:href|src)="' + re.escape(asset) + r')(?:\?[^"\s]*)?"',
+                  lambda match: f'{match.group(1)}?v={version}"',
+                  html,
+              )
           index.write_text(html, encoding="utf-8")
 
           app = Path("_site/app.js")
@@ -84,3 +88,4 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
