@@ -7,7 +7,7 @@
   <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
   <title>Первые · Кемский округ — рабочий кабинет</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=20261115-mobile-sections" />
+  <link rel="stylesheet" href="styles.css?v=20261115-desktop-tools" />
 </head>
 <body>
   <header class="site-header">
@@ -37,6 +37,19 @@
       <a id="announcementLink" class="kindness-banner-action" target="_blank" rel="noopener" hidden>Подать заявку ↗</a>
     </div>
   </aside>
+
+  <nav class="desktop-sidebar" aria-label="Разделы рабочего кабинета">
+    <span class="sidebar-caption">Рабочий кабинет</span>
+    <a href="#week">На этой неделе <span data-nav-count="week"></span></a>
+    <a href="#favorites">Избранное <span data-nav-count="favorites"></span></a>
+    <a href="#now">Задачи <span data-nav-count="now"></span></a>
+    <a href="#calendar">Календарь <span data-nav-count="calendar"></span></a>
+    <a href="#projects">Акции и проекты <span data-nav-count="projects"></span></a>
+    <a href="#docs">Документы <span data-nav-count="docs"></span></a>
+    <a href="#updates">Обновления</a>
+    <a href="#archive">Архив <span data-nav-count="archive"></span></a>
+    <a class="sidebar-top" href="#top">Наверх ↑</a>
+  </nav>
 
   <main id="top">
     <section class="intro">
@@ -72,7 +85,45 @@
       </div>
     </section>
 
+    <div class="workspace-toolbar wrap" aria-label="Настройка отображения">
+      <div class="disclosure-actions">
+        <button type="button" data-sections="collapse">Свернуть всё</button>
+        <button type="button" data-sections="expand">Развернуть всё</button>
+      </div>
+      <div class="view-switch" role="group" aria-label="Вид материалов">
+        <span>Вид материалов</span>
+        <button type="button" data-view="cards" aria-pressed="true">Карточки</button>
+        <button type="button" data-view="list" aria-pressed="false">Список</button>
+      </div>
+    </div>
+
     <p class="mobile-section-hint wrap">Выберите раздел — нажмите, чтобы раскрыть материалы.</p>
+
+    <section class="week-section" id="week" aria-labelledby="week-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure open>
+          <summary class="section-summary">
+            <span class="section-number blue" aria-hidden="true">7д</span>
+            <h2 class="section-label"><span id="week-title">На этой неделе</span><small id="weekRange">Ближайшие 7 дней</small></h2>
+            <span class="section-count" data-section-count="week"></span><span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body"><div class="week-list" id="weekList"></div></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="favorites-section" id="favorites" aria-labelledby="favorites-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure>
+          <summary class="section-summary">
+            <span class="section-number red" aria-hidden="true">★</span>
+            <h2 class="section-label"><span id="favorites-title">Избранное</span><small>Ваши сохранённые карточки и документы</small></h2>
+            <span class="section-count" data-section-count="favorites"></span><span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body"><p class="favorites-hint">Нажмите звёздочку у материала. Избранное сохраняется в этом браузере.</p><div class="favorites-grid" id="favoritesList"></div></div>
+        </details>
+      </div>
+    </section>
 
     <section class="now-section" id="now" aria-labelledby="now-title">
       <div class="wrap">
@@ -210,6 +261,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="data.js?v=20261115-character-first"></script>
-  <script src="app.js?v=20261115-mobile-sections"></script>
+  <script src="app.js?v=20261115-desktop-tools"></script>
 </body>
 </html>

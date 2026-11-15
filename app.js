@@ -6,7 +6,8 @@
   const $=(s,r=document)=>r&&typeof r.querySelector==="function"?r.querySelector(s):null;
   const $$=(s,r=document)=>r&&typeof r.querySelectorAll==="function"?[...r.querySelectorAll(s)]:[];
   const run=(name,fn)=>{try{return fn()}catch(error){console.error("[dashboard] "+name,error);return null}};
-  const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Moscow"})); now.setHours(12,0,0,0);
+  const todayMoscow=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Moscow",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const now=new Date(todayMoscow+"T12:00:00");
   const monthNames=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   let taskFilter="all";
@@ -16,8 +17,8 @@
   let calendarMonth=currentYm;
   let lastFocused=null;
 
-  const parseDate=d=>d?new Date(d+"T12:00:00+03:00"):null;
-  const days=d=>Math.ceil((parseDate(d)-now)/86400000);
+  const parseDate=d=>d?new Date(d+"T12:00:00"):null;
+  const days=d=>Math.round((parseDate(d)-now)/86400000);
   const endDate=i=>{const raw=[i.deadline,i.eventDate,i.reportDeadline];if(i.type==="event"&&!raw.some(Boolean)) raw.push(i.start);const ds=raw.map(parseDate).filter(Boolean);return ds.length?new Date(Math.max(...ds.map(d=>d.getTime()))):null;};
   const expired=i=>i.status==="done"||(endDate(i)&&endDate(i)<now);
   const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
@@ -36,9 +37,29 @@
     return !e||e>=now;
   };
 
-  // Native disclosures keep the full page readable without JavaScript as well.
+  const preferencesKey="pervye-kem-dashboard:preferences:v1";
+  function readPreferences(){
+    try{const value=JSON.parse(localStorage.getItem(preferencesKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch{return {}}
+  }
+  let preferences=readPreferences();
+  let favorites=new Set(Array.isArray(preferences.favorites)?preferences.favorites.filter(x=>typeof x==="string"):[]);
+  function savePreferences(){
+    preferences.favorites=[...favorites];
+    try{localStorage.setItem(preferencesKey,JSON.stringify(preferences))}catch{/* The page remains usable without storage. */}
+  }
+
+  // Keep separate disclosure preferences for phones and computers.
   const compactScreen=window.matchMedia("(max-width: 820px)");
   const sectionDisclosures=()=>$$('[data-section-disclosure]');
+  const disclosureMode=()=>compactScreen.matches?"mobile":"desktop";
+  function disclosureId(el){return el.id||el.closest("section[id]")?.id}
+  function rememberSections(){
+    if(!preferences.sections||typeof preferences.sections!=="object"||Array.isArray(preferences.sections)) preferences.sections={};
+    const state={};
+    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{state[disclosureId(el)]=el.open});
+    preferences.sections[disclosureMode()]=state;
+    savePreferences();
+  }
   function revealSection(hash){
     if(!/^#[a-z-]+$/.test(hash)) return;
     const section=$(hash);
@@ -46,21 +67,109 @@
     if(disclosure) disclosure.open=true;
   }
   function adaptSections(){
-    sectionDisclosures().forEach(el=>{el.open=!compactScreen.matches});
-    const deadlines=$("#heroDeadlines");
-    if(deadlines) deadlines.open=!compactScreen.matches;
+    const state=preferences.sections?.[disclosureMode()]||{};
+    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{
+      const id=disclosureId(el);
+      el.open=typeof state[id]==="boolean"?state[id]:!compactScreen.matches&&id!=="favorites";
+    });
     revealSection(location.hash);
     if(requestedMonth&&!location.hash) revealSection("#projects");
   }
   function setSectionCount(id,count){
     const el=$('[data-section-count="'+id+'"]');
     if(el){el.textContent=count;el.setAttribute("aria-label","Количество записей: "+count)}
+    $$('[data-nav-count="'+id+'"]').forEach(el=>{el.textContent=count});
   }
   run("responsive-sections",()=>{
     adaptSections();
     compactScreen.addEventListener("change",adaptSections);
     window.addEventListener("hashchange",()=>revealSection(location.hash));
+    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>el.addEventListener("toggle",rememberSections));
   });
+
+  function applyView(){
+    const list=preferences.view==="list";
+    document.body.classList.toggle("list-view",list);
+    $$('[data-view]').forEach(el=>el.setAttribute("aria-pressed",String(el.dataset.view===(list?"list":"cards"))));
+  }
+  const documentKey=d=>"doc:"+String(d.id||d.url||d.itemId||d.title);
+  function favoriteButton(key,title){
+    const active=favorites.has(key);
+    const label=(active?"Убрать из избранного: ":"Добавить в избранное: ")+title;
+    return '<button type="button" class="favorite-toggle" data-favorite="'+esc(key)+'" aria-pressed="'+active+'" aria-label="'+esc(label)+'" title="'+esc(label)+'">'+(active?"★":"☆")+'</button>';
+  }
+  function decorateCards(id){
+    const root=$("#"+id);if(!root)return;
+    $$(':scope > button[data-open]',root).forEach(button=>{
+      const i=items.find(i=>i.id===button.dataset.open);if(!i)return;
+      const shell=document.createElement("article");shell.className="saved-card-shell";
+      button.before(shell);shell.append(button);
+      shell.insertAdjacentHTML("beforeend",favoriteButton("item:"+i.id,i.title));
+    });
+  }
+  function refreshFavoriteButtons(){
+    $$('[data-favorite]').forEach(button=>{
+      const active=favorites.has(button.dataset.favorite);
+      const label=button.getAttribute("aria-label").replace(/^(Добавить в избранное|Убрать из избранного): /,"");
+      button.setAttribute("aria-pressed",String(active));
+      button.setAttribute("aria-label",(active?"Убрать из избранного: ":"Добавить в избранное: ")+label);
+      button.title=button.getAttribute("aria-label");button.textContent=active?"★":"☆";
+    });
+  }
+  function renderFavorites(){
+    const cards=items.filter(i=>isPublic(i)&&favorites.has("item:"+i.id)).map(i=>{
+      const key="item:"+i.id;
+      return '<article class="saved-card-shell"><button class="saved-entry" data-open="'+esc(i.id)+'"><small>'+esc(typeLabel[i.type]||"Материал")+'</small><strong>'+esc(i.title)+'</strong><span>'+esc(i.short||i.category)+'</span><em>Открыть материал →</em></button>'+favoriteButton(key,i.title)+'</article>';
+    });
+    (D.documents||[]).filter(d=>favorites.has(documentKey(d))&&(d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))))).forEach(d=>{
+      const action=d.itemId?'button data-open="'+esc(d.itemId)+'"':'a href="'+safeUrl(d.url)+'" target="_blank" rel="noopener"';
+      const tag=d.itemId?"button":"a";
+      cards.push('<article class="saved-card-shell"><'+action+' class="saved-entry"><small>'+esc(d.kind||"Документ")+'</small><strong>'+esc(d.title)+'</strong><span>'+esc(d.description)+'</span><em>Открыть документ ↗</em></'+tag+'>'+favoriteButton(documentKey(d),d.title)+'</article>');
+    });
+    setSectionCount("favorites",cards.length);
+    $("#favoritesList").innerHTML=cards.join("")||'<div class="empty">Пока здесь пусто. Добавьте нужную карточку или документ звёздочкой ☆.</div>';
+  }
+  function renderWeek(){
+    const entries=[];
+    const labels={concept:"Начало акции",task:"Срок выполнения",event:"Мероприятие",registration:"Регистрация",report:"Публикация / отчёт"};
+    const push=(i,date,kind)=>{
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return;
+      const left=days(date);if(left<0||left>6)return;
+      if(!entries.some(e=>e.item.id===i.id&&e.date===date&&e.kind===kind))entries.push({item:i,date,kind,left});
+    };
+    items.filter(i=>isPublic(i)&&i.status!=="done").forEach(i=>{
+      const kind=i.calendarKind||(i.type==="action"?"concept":i.type==="event"?"event":"task");
+      if(i.calendarDisplayDate) push(i,i.calendarDisplayDate,i.calendarDisplayKind||kind);
+      else if(i.calendarMap&&typeof i.calendarMap==="object"){
+        ["start","deadline","eventDate"].forEach(field=>{if(i.calendarMap[field])push(i,i[field],i.calendarMap[field])});
+      }else{
+        if(i.type==="action")push(i,i.start,"concept");
+        if(i.type==="event")push(i,i.eventDate||i.start||i.deadline,"event");
+        else{if(i.deadline)push(i,i.deadline,kind==="registration"?"registration":"task");if(i.eventDate)push(i,i.eventDate,"event")}
+      }
+      if(i.reportDeadline)push(i,i.reportDeadline,"report");
+    });
+    entries.sort((a,b)=>a.left-b.left||a.item.title.localeCompare(b.item.title,"ru"));
+    const last=addDaysIso(todayMoscow,6);
+    $("#weekRange").textContent=fmt(todayMoscow)+" — "+fmt(last)+" · ближайшие 7 дней";
+    setSectionCount("week",entries.length);
+    $("#weekList").innerHTML=entries.map(e=>'<button class="week-entry" data-open="'+esc(e.item.id)+'"><span class="week-date">'+esc(fmtShort(e.date))+'</span><span class="week-copy"><small>'+esc(labels[e.kind]||"Задача")+'</small><strong>'+esc(e.item.title)+'</strong></span><span class="week-countdown '+(e.left<=1?"soon":"")+'">'+(e.left===0?"Сегодня":e.left===1?"Завтра":"Через "+e.left+" дн.")+'</span><span class="week-arrow" aria-hidden="true">→</span></button>').join("")||'<div class="empty">На ближайшие 7 дней в календаре пока нет событий и сроков. Все материалы доступны в разделах ниже.</div>';
+  }
+  function setupSidebar(){
+    const sections=$$("main > section[id]").filter(el=>el.id!=="top");
+    const update=()=>{
+      let active="";
+      sections.forEach(el=>{if(el.getBoundingClientRect().top<=150)active=el.id});
+      $$(".desktop-sidebar a").forEach(a=>{
+        const current=a.hash==="#"+active;
+        if(current)a.setAttribute("aria-current","location");else a.removeAttribute("aria-current");
+      });
+    };
+    let queued=false;
+    window.addEventListener("scroll",()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;update()})}},{passive:true});
+    window.addEventListener("resize",update);
+    document.addEventListener("toggle",update,true);update();
+  }
 
   function renderFreshness(){
     const el=$("#siteUpdatedAt");
@@ -183,6 +292,7 @@
         +'<span class="compact-open">Открыть инструкцию →</span>'
         +'</button>';
     }).join("")||'<div class="empty">В этой категории пока ничего нет.</div>';
+    decorateCards("taskList");
   }
 
   function renderProjects(){
@@ -219,6 +329,7 @@
         +'<span class="compact-open">Полная инструкция →</span>'
         +'</button>';
     }).join("")||'<div class="empty">Ничего не найдено.</div>';
+    decorateCards("projectList");
   }
 
   function renderCalendar(){
@@ -321,7 +432,7 @@
       const action=d.itemId
         ? '<button data-open="'+d.itemId+'">Открыть →</button>'
         : '<a href="'+safeUrl(d.url)+'" target="_blank" rel="noopener">Открыть →</a>';
-      return '<article class="doc-card"><div class="doc-icon">'+(d.kind==="Курс"?"▶":d.kind==="Справочник"?"#":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p>'+action+'</div></article>';
+      return '<article class="doc-card saved-document"><div class="doc-icon">'+(d.kind==="Курс"?"▶":d.kind==="Справочник"?"#":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p>'+action+'</div>'+favoriteButton(documentKey(d),d.title)+'</article>';
     }).join("");
   }
 
@@ -340,6 +451,7 @@
     const list=items.filter(i=>isPublic(i)&&expired(i)).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
     setSectionCount("archive",list.length);
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
+    decorateCards("archiveList");
   }
 
   function addDaysIso(iso,days=1){
@@ -450,7 +562,7 @@
     const overview='<section class="detail-overview"><div><span>Срок</span><strong>'+esc(deadlineLabel(i))+'</strong></div>'+(i.eventDate?'<div><span>Дата события</span><strong>'+esc(fmt(i.eventDate))+'</strong></div>':"")+(i.reportDeadline?'<div><span>Публикация / отчёт</span><strong>до '+esc(fmt(i.reportDeadline))+'</strong></div>':"")+(audience?'<div><span>Для кого</span><strong>'+esc(audience.replace("Кому: ",""))+'</strong></div>':"")+'</section>';
     const cal=calendarEventFor(i);
     const calendarActions=cal?'<section class="calendar-add"><div><span>Не пропустить дату</span><strong>Добавить в свой календарь</strong></div><div class="calendar-add-actions"><a href="'+safeUrl(googleCalendarUrl(i))+'" target="_blank" rel="noopener" class="google-calendar-btn">Google Calendar ↗</a><button type="button" data-apple-calendar="'+i.id+'" class="apple-calendar-btn">Apple Calendar / .ics ↓</button></div></section>':"";
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><div class="modal-save">'+favoriteButton("item:"+i.id,i.title)+'<span>Сохранить в избранном</span></div><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
     lastFocused=document.activeElement;
     $("#searchPanel").hidden=true;
     $("#detailModal").hidden=false;
@@ -493,7 +605,21 @@
   document.addEventListener("click",e=>{
     const anchor=e.target.closest('a[href^="#"]');
     if(anchor) revealSection(anchor.getAttribute("href"));
-    let x=e.target.closest("[data-open]"); if(x){openModal(x.dataset.open);return}
+    let x=e.target.closest("[data-favorite]");if(x){
+      const key=x.dataset.favorite;
+      const wasSaved=favorites.has(key);
+      const inFavorites=Boolean(x.closest("#favoritesList"));
+      if(wasSaved)favorites.delete(key);else favorites.add(key);
+      savePreferences();refreshFavoriteButtons();renderFavorites();
+      if(inFavorites){const target=$("#favoritesList [data-favorite]")||$("#favorites .section-summary");if(target)target.focus()}
+      toast(wasSaved?"Убрано из избранного":"Добавлено в избранное");return;
+    }
+    x=e.target.closest("[data-sections]");if(x){
+      const open=x.dataset.sections==="expand";
+      [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{el.open=open});rememberSections();return;
+    }
+    x=e.target.closest("[data-view]");if(x){preferences.view=x.dataset.view;savePreferences();applyView();return}
+    x=e.target.closest("[data-open]"); if(x){openModal(x.dataset.open);return}
     x=e.target.closest("[data-task-filter]"); if(x){taskFilter=x.dataset.taskFilter;renderTasks();return}
     x=e.target.closest("[data-project-filter]"); if(x){projectFilter=x.dataset.projectFilter;renderProjects();return}
     x=e.target.closest("[data-month]"); if(x){calendarMonth=x.dataset.month;renderCalendar();return}
@@ -522,6 +648,12 @@
 
   const shortcut=$("#searchShortcut");
   if(shortcut) shortcut.textContent=/Mac|iPhone|iPad/i.test(navigator.platform||"")?"⌘ K":"Ctrl K";
+  window.addEventListener("storage",e=>{
+    if(e.key!==preferencesKey&&e.key!==null)return;
+    preferences=readPreferences();favorites=new Set(Array.isArray(preferences.favorites)?preferences.favorites.filter(x=>typeof x==="string"):[]);
+    applyView();refreshFavoriteButtons();renderFavorites();
+  });
+  run("view",applyView);
   run("settings",applySiteSettings);
   run("freshness",renderFreshness);
   run("hero",renderHero);
@@ -531,6 +663,9 @@
   run("docs",renderDocs);
   run("updates",renderUpdates);
   run("archive",renderArchive);
+  run("favorites",renderFavorites);
+  run("week",renderWeek);
+  run("sidebar",setupSidebar);
   run("deep-link",()=>{
     const deepLinkedCard=new URL(location.href).searchParams.get("card");
     if(deepLinkedCard)setTimeout(()=>openModal(deepLinkedCard),0);
