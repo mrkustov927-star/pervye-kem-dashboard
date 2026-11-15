@@ -51,6 +51,12 @@
   // Keep separate disclosure preferences for phones and computers.
   const compactScreen=window.matchMedia("(max-width: 820px)");
   const sectionDisclosures=()=>$$('[data-section-disclosure]');
+  function numberSections(){
+    sectionDisclosures().forEach((section,index)=>{
+      const badge=$(".section-number",section);
+      if(badge)badge.textContent=String(index+1).padStart(2,"0");
+    });
+  }
   const disclosureMode=()=>compactScreen.matches?"mobile":"desktop";
   function disclosureId(el){return el.id||el.closest("section[id]")?.id}
   function rememberSections(){
@@ -203,7 +209,8 @@
     put("#projectsSubtitle",s.projectsSubtitle);
     put("#docs-title",s.docsTitle);
     put("#docsSubtitle",s.docsSubtitle);
-    put("#archiveTitle",s.archiveTitle);
+    const legacyArchiveTitle=/^Прошедшие задания и мероприятия(?:\s*\(.*\))?$/i;
+    put("#archiveTitle",s.archiveTitle&&!legacyArchiveTitle.test(s.archiveTitle)?s.archiveTitle:"Архив мероприятий");
     put("#footerSubtitle",s.footerSubtitle);
     const banner=$("#kindnessBanner");
     if(banner){
@@ -450,6 +457,12 @@
   function renderArchive(){
     const list=items.filter(i=>isPublic(i)&&expired(i)).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
     setSectionCount("archive",list.length);
+    const dates=list.map(i=>endDate(i)||parseDate(i.start)).filter(Boolean).sort((a,b)=>a-b);
+    const subtitle=$("#archiveSubtitle");
+    if(subtitle){
+      const label=dates.length?new Intl.DateTimeFormat("ru-RU",{month:"long",year:"numeric"}).formatRange(dates[0],dates[dates.length-1]):"Карточки и материалы завершённых событий";
+      subtitle.textContent=label;
+    }
     $("#archiveList").innerHTML=list.map(i=>'<button class="archive-card" data-open="'+i.id+'"><b>'+esc(i.title)+'</b><span>'+esc(i.category)+' · '+esc(i.deadline?fmt(i.deadline):"завершено")+'</span></button>').join("")||'<div class="empty">Архив пока пуст.</div>';
     decorateCards("archiveList");
   }
@@ -654,6 +667,7 @@
     applyView();refreshFavoriteButtons();renderFavorites();
   });
   run("view",applyView);
+  run("section-numbers",numberSections);
   run("settings",applySiteSettings);
   run("freshness",renderFreshness);
   run("hero",renderHero);
