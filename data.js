@@ -1,7 +1,7 @@
 window.DASHBOARD_DATA = {
   "meta": {
     "title": "Первые · Кемский округ",
-    "updatedAt": "2026-11-15T12:30:23.107Z",
+    "updatedAt": "2026-11-15T16:40:27.555Z",
     "editorialNote": "Даты и формулировки проверены по официальным рекомендациям и рабочей переписке первичных организаций. Если срок в источнике не указан, карточка не получает выдуманный дедлайн.",
     "site": {
       "announcementEnabled": "true",
@@ -2389,7 +2389,7 @@ window.DASHBOARD_DATA = {
         "До 30 сентября"
       ],
       "source": "Официальная страница IV Всероссийского слёта «Хранители истории»",
-      "visible": true,
+      "visible": false,
       "steps": [
         "Сформировать команду обучающихся и наставника.",
         "Зарегистрировать команду и подать конкурсную заявку до 30 сентября 2026 года.",
@@ -2418,7 +2418,10 @@ window.DASHBOARD_DATA = {
           "label": "Выполнение задания",
           "url": "https://projects.pervye.ru/events/9ea5bfc0-5067-4c39-b25c-284aef7b4107"
         }
-      ]
+      ],
+      "archived": true,
+      "archivedAt": "2026-11-15T16:40:27.555Z",
+      "archivedPreviousVisible": true
     },
     {
       "id": "item-mue3pr4s-phaph",
