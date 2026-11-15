@@ -7,11 +7,12 @@ const root=path.join(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const prefix=source.slice(source.indexOf('  const D='),source.indexOf('  const preferencesKey='));
 const calendar=source.slice(source.indexOf('  function calendarEntries(){'),source.indexOf('  function renderWeek(){'));
+const exportHelpers=source.slice(source.indexOf('  function addDaysIso('),source.indexOf('  function googleCalendarUrl('));
 const instant='2026-11-15T10:00:00Z';
 class AuditDate extends Date{constructor(...args){super(...(args.length?args:[instant]));}static now(){return Date.parse(instant);}}
 function load(items){
-  const context={window:{DASHBOARD_DATA:{items},location:{search:''}},Date:AuditDate,Intl,URLSearchParams};
-  vm.runInNewContext(prefix+calendar+'\nthis.api={expired,endDate,nextDeadline,reportPending,calendarEntries,stagesInMonth,stagePeriod,isPublic};',context);
+  const context={window:{DASHBOARD_DATA:{items},location:{search:''}},location:{origin:'https://example.com',pathname:'/'},Date:AuditDate,Intl,URLSearchParams};
+  vm.runInNewContext(prefix+calendar+exportHelpers+'\nthis.api={expired,endDate,nextDeadline,reportPending,calendarEntries,stagesInMonth,stagePeriod,isPublic,calendarEventFor};',context);
   return context.api;
 }
 const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'data.js'),'utf8'),context,{timeout:1000});
@@ -91,4 +92,8 @@ test('saving an ordinary admin form preserves stages, while explicit clearing re
   assert.equal(saved.stages.length,before.stages.length);
   const explicit={...raw,stages:[]};
   assert.equal(context.preserveStages(before,context.cleanItem(explicit),explicit).stages.length,0);
+});
+test('calendar export uses the next actual deadline and preserves a pending report',()=>{
+  const api=load(data.items);const primary=data.items.find(i=>i.id==='primary-contest');assert.equal(api.calendarEventFor(primary).date,'2026-11-22');
+  const event={id:'event',type:'event',eventDate:'2026-11-14',reportDeadline:'2026-11-20'};assert.equal(load([event]).calendarEventFor(event).date,'2026-11-20');
 });

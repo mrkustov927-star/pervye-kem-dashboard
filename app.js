@@ -497,10 +497,11 @@
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   }
   function calendarEventFor(i){
-    const date=i.eventDate||i.deadline||i.start;
+    const upcoming=nextDeadline(i);
+    const date=expired(i)&&reportPending(i)?i.reportDeadline:i.type==="event"?(i.eventDate||i.start||i.deadline):(upcoming||i.eventDate||i.deadline||i.start);
     if(!date) return null;
-    const kind=i.eventDate?"event":i.deadline?"deadline":"start";
-    const title=kind==="deadline"?"Дедлайн: "+i.title:i.title;
+    const kind=date===i.reportDeadline?"report":date===i.eventDate?"event":upcoming||date===i.deadline?"deadline":"start";
+    const title=kind==="report"?"Публикация / отчёт: "+i.title:kind==="deadline"?"Дедлайн: "+i.title:i.title;
     const cardUrl=location.origin+location.pathname+"?card="+encodeURIComponent(i.id);
     const external=(i.links&&i.links[0]&&/^https?:\/\//i.test(i.links[0].url||""))?i.links[0].url:"";
     const details=[
