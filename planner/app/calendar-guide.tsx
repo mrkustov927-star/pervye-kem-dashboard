@@ -39,7 +39,7 @@ export function CalendarGuide(p:ViewProps){
     else if(!done)instruction='Проверить отчёт и отметить сдачу';
     const deadline=task.end||choice.recommended.end;
     return {template,task,choice,current,phaseDone,instruction,deadline,planned:!!task.end};
-  }).filter(x=>x.current!==-1).sort((a,b)=>
+  }).filter(x=>x.task.status!=='submitted'&&x.current!==-1).sort((a,b)=>
     a.deadline.localeCompare(b.deadline)||a.template.number-b.template.number
   );
   const nearest=entries.slice(0,3);
