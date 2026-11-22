@@ -1,5 +1,5 @@
 (()=>{
-  const base='https://pervye-kem-dashboard.vercel.app';
+  const base='https://geiuieajngqmyrrlicwj.supabase.co/functions/v1/kpo-gateway';
   const version=new URL(document.currentScript.src).searchParams.get('v')||'development';
   const message=document.querySelector('#curatorMessage');
   const gate=document.querySelector('#curatorAccess');
@@ -29,7 +29,7 @@
   }
   async function download(path){
     if(!/^\/files\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(path))throw Error('Неверная ссылка на файл.');
-    const response=await request('/api/content?file='+encodeURIComponent(path.slice(1)));
+    const response=await request('/content?file='+encodeURIComponent(path.slice(1)));
     const blob=await response.blob(),url=URL.createObjectURL(blob);
     const encoded=(response.headers.get('Content-Disposition')||'').match(/filename\*=UTF-8''([^;]+)/i)?.[1];
     let name=path.split('/').pop();try{if(encoded)name=decodeURIComponent(encoded)}catch{}
@@ -39,7 +39,7 @@
   const goHome=()=>{location.hash='#home'};
   window.DASHBOARD_ACCESS={download,logout:goHome};
   async function open(){
-    const response=await request('/api/content');
+    const response=await request('/content');
     const result=await response.json();
     if(!result.ok)throw Error(result.error||'Ошибка загрузки.');
     window.DASHBOARD_DATA=result.data;

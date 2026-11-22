@@ -1,0 +1,5 @@
+project_id = "geiuieajngqmyrrlicwj"
+
+[functions.kpo-gateway]
+# The planner API verifies its own signed sessions and editor credentials.
+verify_jwt = false

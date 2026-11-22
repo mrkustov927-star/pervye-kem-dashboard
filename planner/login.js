@@ -1,5 +1,5 @@
 (()=>{
-  const base=location.hostname.endsWith('github.io')?'https://pervye-kem-dashboard.vercel.app':location.origin;
+  const base='https://geiuieajngqmyrrlicwj.supabase.co/functions/v1/kpo-gateway';
   const sessionKey='kpoPlannerSession:v1', editorKey='kpoPlannerEditorLink:v1';
   const form=document.querySelector('#plannerLogin'), status=document.querySelector('#status');
   const actions=document.querySelector('#retryActions'), input=form.querySelector('input');
@@ -18,7 +18,7 @@
     const headers=new Headers(options.headers);
     if(session)headers.set('Authorization','Bearer '+session);
     if(editor)headers.set('X-Planner-Editor',editor);
-    const r=await fetch(base+'/api/planner'+query,{...options,headers,credentials:'omit',cache:'no-store'});
+    const r=await fetch(base+'/planner'+query,{...options,headers,credentials:'omit',cache:'no-store'});
     if(r.status===401)ask('Для продолжения введите пароль конкурса.');
     return r;
   };
@@ -40,7 +40,7 @@
   form.addEventListener('submit',async e=>{
     e.preventDefault();const btn=form.querySelector('button');btn.disabled=true;status.textContent='Проверяем пароль…';
     try{
-      const r=await fetch(base+'/api/planner?login=1',{method:'POST',credentials:'omit',cache:'no-store',
+      const r=await fetch(base+'/planner?login=1',{method:'POST',credentials:'omit',cache:'no-store',
         headers:{'Content-Type':'application/json'},body:JSON.stringify({password:input.value})});
       const j=await r.json();
       if(!r.ok){status.textContent=j.error||'Вход временно недоступен.';input.select();return;}
