@@ -18,6 +18,9 @@ export function forTeam(team:Team){return templates.filter(t=>team.league==='lo'
 export const ref=(teamId:string,key:string)=>teamId+'/'+key;
 const defaults:Record<string,string>={'lv-8':'atom','lv-9':'cooking','lv-10':'cinema','lv-11':'spartak','lv-13':'animals','lo-4':'science','lo-5':'traditional_games','lo-7':'antifraud','lo-8':'animals'};
 export function variant(t:Template,task:Task,team:Team){return t.variants.find(v=>t.key==='lo-10'?v.mentorCondition===(team.mentorId?'present':'absent'):v.id===task.variantId)??t.variants[0]}
+export function variantFields(next:Variant):Partial<Task> {
+ return {variantId:next.id,goal:next.specific,impact:next.relevance,metrics:{},reports:{},steps:[]};
+}
 export function emptyTask(t:Template,team:Team):Task{const v=t.variants.find(v=>v.id===(defaults[t.key]??t.variants[0].id))!;return {variantId:v.id,goal:v.specific,audience:'',impact:v.relevance,owner:'',resourcesText:'',resourcesConfirmed:false,start:'',end:'',submit:'',announcement:'',status:'draft',metrics:{},reports:{},checklist:{},steps:[],dependencies:[],notes:''}}
 export function getTask(p:Plan,team:Team,t:Template){const task=p.tasks[ref(team.id,t.key)]??emptyTask(t,team);if(t.key==='lo-10'){const correct=t.variants.find(v=>v.mentorCondition===(team.mentorId?'present':'absent'))!;if(task.variantId!==correct.id)return {...task,variantId:correct.id,goal:correct.specific,impact:correct.relevance,reports:{},metrics:{},steps:[],resourcesConfirmed:false};}return task}
 export function initialPlan():Plan{return {schema:1,teams:[{id:'team-main',name:'Моя первичка',league:'lv',mentorId:'',capacity:3,firstGraders:false},{id:'team-mentor',name:'Команда-шеф',league:'pl',mentorId:'',capacity:3,firstGraders:false},{id:'team-discovery',name:'Подшефная команда',league:'lo',mentorId:'team-mentor',capacity:2,firstGraders:false}],tasks:{},events:[],auditDate:'2026-11-20',updatedAt:''}}
