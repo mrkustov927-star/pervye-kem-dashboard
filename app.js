@@ -315,7 +315,7 @@
     const legacyArchiveTitle=/^Прошедшие задания и мероприятия(?:\s*\(.*\))?$/i;
     put("#archiveTitle",s.archiveTitle&&!legacyArchiveTitle.test(s.archiveTitle)?s.archiveTitle:"Архив");
     put("#footerSubtitle",s.footerSubtitle);
-    const navTitles={now:"#now-title",calendar:"#calendar-title",docs:"#docs-title",favorites:"#favorites-title",archive:"#archiveTitle",updates:"#updates-title"};
+    const navTitles={now:"#now-title",calendar:"#calendar-title",docs:"#docs-title",favorites:"#favorites-title",archive:"#archiveTitle"};
     Object.entries(navTitles).forEach(([id,selector])=>{
       const title=$(selector)?.textContent;if(!title)return;
       $$('.header-links a[href="#'+id+'"],.desktop-sidebar a[href="#'+id+'"],.mobile-nav a[href="#'+id+'"]')
@@ -456,17 +456,6 @@
         : '<a href="'+safeUrl(d.url)+'" target="_blank" rel="noopener">Открыть →</a>';
       return '<article class="doc-card saved-document"><div class="doc-icon">'+(d.kind==="Курс"?"▶":d.kind==="Справочник"?"#":"↗")+'</div><div><small>'+esc(d.kind)+'</small><h3>'+esc(d.title)+'</h3><p>'+esc(d.description)+'</p>'+action+'</div>'+favoriteButton(documentKey(d),d.title)+'</article>';
     }).join("");
-  }
-
-  function renderUpdates(){
-    const list=Array.isArray(D.updates)?[...D.updates]:[];
-    list.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
-    setSectionCount("updates",Math.min(list.length,5));
-    $("#updatesList").innerHTML=list.slice(0,5).map(u=>{
-      const d=u.date?new Date(u.date):null;
-      const date=d&&!Number.isNaN(d.getTime())?d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",timeZone:"Europe/Moscow"}):"";
-      return '<article class="update-card"><span>'+esc(date)+'</span><div><strong>'+esc(u.title)+'</strong><p>'+esc(u.text)+'</p></div></article>';
-    }).join("")||'<div class="empty">Пока нет новых изменений.</div>';
   }
 
   function renderArchive(){
@@ -712,7 +701,6 @@
   run("current",renderCurrent);
   run("calendar",renderCalendar);
   run("docs",renderDocs);
-  run("updates",renderUpdates);
   run("archive",renderArchive);
   run("favorites",renderFavorites);
   run("sidebar",setupSidebar);
