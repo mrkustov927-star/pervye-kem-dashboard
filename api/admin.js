@@ -1,7 +1,8 @@
 const crypto = require("crypto");
+const {cors}=require("../lib/viewer-access");
 
 const OWNER = process.env.GITHUB_OWNER || "mrkustov927-star";
-const REPO = process.env.GITHUB_REPO || "pervye-kem-dashboard";
+const REPO = process.env.PRIVATE_GITHUB_REPO || process.env.GITHUB_REPO || "KPO2026-2027";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
 const DATA_PATH = "data.js";
 const ALLOWED_TYPES = new Set(["task","project","action","event","info"]);
@@ -22,7 +23,7 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 function configured() {
-  return Boolean(process.env.ADMIN_PASSWORD && process.env.GITHUB_TOKEN);
+  return Boolean(process.env.ADMIN_PASSWORD && (process.env.PRIVATE_GITHUB_TOKEN || process.env.GITHUB_TOKEN));
 }
 function signSession() {
   const payload = Buffer.from(JSON.stringify({exp: Date.now() + 8 * 60 * 60 * 1000})).toString("base64url");
@@ -252,7 +253,7 @@ async function gh(path, options={}) {
     ...options,
     headers: {
       "Accept":"application/vnd.github+json",
-      "Authorization":"Bearer "+process.env.GITHUB_TOKEN,
+      "Authorization":"Bearer "+(process.env.PRIVATE_GITHUB_TOKEN || process.env.GITHUB_TOKEN),
       "X-GitHub-Api-Version":"2022-11-28",
       ...(options.headers||{})
     }
@@ -289,6 +290,7 @@ async function saveData(data, sha, message) {
 }
 
 module.exports = async function handler(req,res) {
+  if(!cors(req,res))return;
   if (req.method === "GET") return json(res,200,{ok:true,configured:configured()});
   if (req.method !== "POST") return json(res,405,{ok:false,error:"Метод не поддерживается."});
   if (!configured()) return json(res,503,{ok:false,code:"NOT_CONFIGURED",error:"Админ-панель ещё не настроена."});
@@ -313,6 +315,7 @@ module.exports = async function handler(req,res) {
   if (!validSession(token)) return json(res,401,{ok:false,error:"Сессия истекла. Войдите снова."});
 
   try {
+    if (body.action === "read-data") {const {data}=await loadData();return json(res,200,{ok:true,data});}
     if (body.action === "upload-file") {
       const file = body.file && typeof body.file === "object" ? body.file : {};
       const originalName = cleanString(file.name,260);

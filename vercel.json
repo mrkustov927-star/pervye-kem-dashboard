@@ -64,15 +64,6 @@
       ]
     },
     {
-      "source": "/files/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
       "source": "/",
       "headers": [
         {
@@ -89,6 +80,30 @@
           "value": "no-cache, no-store, must-revalidate"
         }
       ]
+    }
+  ],
+  "buildCommand": "node scripts/build-public.js",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/data.js",
+      "destination": "/api/content"
+    },
+    {
+      "source": "/files/:path*",
+      "destination": "/api/content?file=files/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://mrkustov927-star.github.io/pervye-kem-dashboard/",
+      "permanent": false
+    },
+    {
+      "source": "/admin",
+      "destination": "https://mrkustov927-star.github.io/pervye-kem-dashboard/admin/",
+      "permanent": false
     }
   ]
 }

@@ -462,3 +462,21 @@ details[open]>.section-summary .section-chevron:before,details[open]>.hero-visua
   .overview-links strong{font-size:12px}
   .overview-links small{display:none}
 }
+
+#dashboard[hidden],.curator-access[hidden]{display:none!important}
+.curator-access{min-height:100dvh;display:grid;place-items:center;padding:28px 18px;background:radial-gradient(circle at 10% 10%,#fff0f1,transparent 45%),#f3f7ff}
+.curator-access-card{width:min(480px,100%);padding:32px;border:1px solid #d9e3f3;border-radius:24px;background:#fff;box-shadow:0 24px 60px #23467416}
+.curator-access-card>img{display:block;width:156px;height:auto;margin-left:-14px}
+.curator-kicker{margin:10px 0 14px;color:var(--blue);font-size:14px;font-weight:750}
+.curator-access-card h1{margin:0 0 16px;font-size:32px;line-height:1.12;letter-spacing:-.025em}
+.curator-access-card>p{font-size:16px;line-height:1.6;color:#5b6472}
+#curatorLogin{display:grid;gap:10px;margin-top:22px}
+#curatorLogin label{font-size:16px;font-weight:750}
+#curatorLogin input{width:100%;min-height:50px;padding:12px 14px;border:1px solid #b9cbe6;border-radius:12px;font-size:18px}
+#curatorLogin button{min-height:50px;margin-top:5px;border:0;border-radius:12px;background:var(--red);color:#fff;font-size:16px;font-weight:850}
+#curatorLogin button:disabled{opacity:.65;cursor:wait}
+#curatorMessage{min-height:24px;margin:0;font-size:14px;color:#9d2330;line-height:1.5}
+.curator-access-card>.curator-help{font-size:14px;margin:14px 0}
+.curator-admin-link{color:var(--blue);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.curator-logout{margin-left:auto;padding:9px 12px;border:1px solid #d7e2f1;border-radius:10px;background:#fff;color:#425675;font-size:14px}
+@media(max-width:680px){body:has(#dashboard[hidden]){padding-bottom:0}.curator-access-card{padding:24px}.curator-access-card h1{font-size:28px}}

@@ -1,83 +1,33 @@
-name: Backup site on GitHub Pages
-
+name: Publish curator interface on GitHub Pages
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: github-pages
   cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Prepare backup site
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p _site
-          cp index.html styles.css app.js data.js favicon.svg pervye-logo-clean.png pervye-logo.svg _site/
-          if [ -d files ]; then
-            cp -R files _site/files
-          fi
-          touch _site/.nojekyll
-
-          python3 <<'PY'
-          from pathlib import Path
-          from os import environ
-          import re
-
-          index = Path("_site/index.html")
-          html = index.read_text(encoding="utf-8")
-          html = html.replace(
-              'href="/admin" class="admin-entry"',
-              'href="https://pervye-kem-dashboard.vercel.app/admin" class="admin-entry"'
-          )
-          html = html.replace(
-              '>Вход для администратора</a>',
-              '>Администрирование ↗</a>'
-          )
-          # Force fresh data and scripts on every published commit, including on phones.
-          version = environ["GITHUB_SHA"][:12]
-          for asset in ("styles.css", "data.js", "app.js"):
-              html = re.sub(
-                  r'((?:href|src)="' + re.escape(asset) + r')(?:\?[^"\s]*)?"',
-                  lambda match: f'{match.group(1)}?v={version}"',
-                  html,
-              )
-          index.write_text(html, encoding="utf-8")
-
-          app = Path("_site/app.js")
-          js = app.read_text(encoding="utf-8")
-          old = 'return (/^https?:\\/\\//i.test(v)||/^\\/files\\//.test(v))?esc(v):"#";'
-          new = '''if(/^https?:\\/\\//i.test(v)) return esc(v);
-            if(/^\\/files\\//.test(v)) return esc("./"+v.replace(/^\\/+/, ""));
-            return "#";'''
-          if old not in js:
-              raise SystemExit("safeUrl return line not found; backup build stopped to avoid broken file links")
-          app.write_text(js.replace(old, new), encoding="utf-8")
-          PY
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Check access controls
+        run: node --test tests/access.test.cjs
+      - name: Prepare public interface without data
+        run: node scripts/build-public.js
+      - uses: actions/configure-pages@v5
         with:
           enablement: true
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v4
         with:
-          path: ./_site
-
+          path: ./public
   deploy:
     environment:
       name: github-pages
@@ -85,8 +35,5 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy GitHub Pages
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4
-
-

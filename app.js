@@ -649,6 +649,9 @@
   }
 
   document.addEventListener("click",e=>{
+    const attachment=e.target.closest('a[href^="/files/"]');
+    if(attachment){e.preventDefault();window.DASHBOARD_ACCESS.download(attachment.getAttribute("href")).catch(error=>toast(error.message));return;}
+
     const anchor=e.target.closest('a[href^="#"]');
     if(anchor) revealSection(anchor.getAttribute("href"));
     let x=e.target.closest("[data-favorite]");if(x){

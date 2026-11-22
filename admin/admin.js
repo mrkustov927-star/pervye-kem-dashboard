@@ -1,5 +1,6 @@
 (()=> {
-  const D = window.DASHBOARD_DATA || {items:[],meta:{}};
+  const D = {items:[],documents:[],meta:{}};
+  const API_BASE="https://pervye-kem-dashboard.vercel.app";
   const clone = typeof structuredClone==="function" ? structuredClone : value=>JSON.parse(JSON.stringify(value));
   let items = Array.isArray(D.items) ? clone(D.items) : [];
   let documents = Array.isArray(D.documents) ? clone(D.documents) : [];
@@ -63,23 +64,20 @@
   function slugify(s){
     return String(s||"").toLowerCase().normalize("NFKD").replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,70);
   }
-  async function waitForLiveVersion(updatedAt,onState){
-    if(!updatedAt) return false;
-    const needle='"updatedAt": "'+updatedAt+'"';
-    for(let n=0;n<30;n++){
-      if(onState) onState(n);
-      await new Promise(r=>setTimeout(r,n===0?1200:2000));
-      try{
-        const response=await fetch("/data.js?check="+Date.now(),{cache:"no-store"});
-        const source=await response.text();
-        if(response.ok&&source.includes(needle)) return true;
-      }catch{}
-    }
-    return false;
+  async function refreshData(){
+    const result=await api({action:"read-data"});
+    Object.assign(D,result.data);
+    items=clone(D.items||[]);documents=clone(D.documents||[]);
+    siteSettings={...defaultSiteSettings,...(D.meta?.site||{})};
+  }
+  async function waitForLiveVersion(updatedAt){
+    if(!updatedAt)return false;
+    const result=await api({action:"read-data"});
+    return result.data?.meta?.updatedAt===updatedAt;
   }
 
   async function api(body){
-    const r=await fetch("/api/admin",{
+    const r=await fetch(API_BASE+"/api/admin",{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
@@ -98,7 +96,7 @@
   }
   async function checkSetup(){
     try{
-      const r=await fetch("/api/admin",{cache:"no-store"});
+      const r=await fetch(API_BASE+"/api/admin",{cache:"no-store"});
       const data=await r.json();
       return Boolean(data.configured);
     }catch{
@@ -684,6 +682,7 @@
       token=result.token;
       sessionStorage.setItem("pervyeAdminToken",token);
       $("#passwordInput").value="";
+      await refreshData();
       showWorkspace();
     }catch(err){
       $("#loginMessage").textContent=err.message;
@@ -790,6 +789,6 @@
 
   (async()=>{
     const ready=await checkSetup();
-    if(token&&ready) showWorkspace(); else showLogin(ready?"":"Вход временно недоступен.");
+    if(token&&ready){try{await refreshData();showWorkspace();}catch(error){showLogin(error.message);}}else showLogin(ready?"":"Вход временно недоступен.");
   })();
 })();
