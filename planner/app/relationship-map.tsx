@@ -1,8 +1,8 @@
 'use client';
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {Ban, CalendarDays, Check, FileText, Link2, Plus} from 'lucide-react';
 import type {ViewProps} from './planner';
-import {dateLabel, forTeam, getTask, leagues, statuses, variant, variantFields, ref, type Variant} from './model';
+import {forTeam, getTask, leagues, statuses, variant, variantFields, ref, type Variant} from './model';
 import {taskRelations, type TaskRelation} from './relations';
 
 const labels: Record<TaskRelation['kind'], string> = {
@@ -40,21 +40,17 @@ export function MapView(p: ViewProps & {readOnly?: boolean}) {
  const groups = taskRelations(plan, team, task);
  const contest = groups.filter(g => ['required','optional','excluded'].includes(g.kind));
  const own = groups.filter(g => ['before','after','event'].includes(g.kind));
- const choices = list.map(item => {
-  const progress = getTask(plan, team, item);
-  return {item, title: variant(item, progress, team).title, multiple:item.variants.length>1, sent: progress.status === 'submitted'};
+ const stopPanel = useRef<HTMLElement>(null);
+ const stops = list.map(item => {
+  const progress = getTask(plan,team,item);
+  return {item,title:variant(item,progress,team).title,status:progress.status};
  });
- const nextStep = v.steps.find((_, index) => !state.steps.includes(index));
- const submitted = state.status === 'submitted';
- const needsReport = state.status === 'completed' || !nextStep;
- const needsPlan = !state.owner.trim() || !state.end;
- const next = submitted ? 'Отправка отчёта отмечена. Можно выбрать другое задание.'
-  : needsReport ? 'Сверьте комплект отчёта перед отправкой в личном кабинете конкурса.'
-  : !state.owner.trim() ? 'Договоритесь, кто отвечает за задание, и укажите его в плане.'
-  : !state.end ? 'Выберите дату выполнения задания вместе с командой.' : nextStep;
- const tab = submitted || needsReport ? 'reports' : needsPlan ? 'plan' : 'steps';
- const action = tab === 'reports' ? 'Открыть отчёт' : tab === 'steps' ? 'Открыть этапы' : readOnly ? 'Посмотреть план' : 'Открыть план работы';
-
+ function selectStop(key:string) {
+  p.selectTask(key);
+  if(window.matchMedia('(max-width:850px)').matches){
+   requestAnimationFrame(()=>{stopPanel.current?.focus({preventScroll:true});stopPanel.current?.scrollIntoView({block:'start'})});
+  }
+ }
  function relation(group: TaskRelation) {
   const links = group.targets.map(target => {
    const tm = plan.teams.find(t => t.id === target.teamId);
@@ -72,27 +68,31 @@ export function MapView(p: ViewProps & {readOnly?: boolean}) {
    {group.eventId&&<button className="text-button" onClick={()=>p.openEvent(plan.events.find(e=>e.id===group.eventId))}>Посмотреть событие</button>}
   </article>;
  }
- return <div className="task-map">
-  <nav className="panel task-directory" aria-label="Задания общего зачёта">
-   <h2>Задания общего зачёта</h2>
-   <div className="task-directory-list">{choices.map(({item,title,sent,multiple})=><button type="button" key={item.key} aria-pressed={item.key===task.key} onClick={()=>p.selectTask(item.key)}>
-    <span className="task-index">{item.number}</span><span>{title}{multiple&&<small className="map-option-count">2 варианта</small>}</span>{sent&&<Check size={16} aria-label="Отправка отчёта отмечена"/>}
-   </button>)}</div>
-   <label className="task-directory-mobile">Выберите задание<select value={task.key} onChange={e=>p.selectTask(e.target.value)}>{choices.map(({item,title,sent,multiple})=><option key={item.key} value={item.key}>№ {item.number}. {title}{multiple?' · 2 варианта':''}{sent?' · отчёт отправлен':''}</option>)}</select></label>
-  </nav>
-  <section key={team.id+'/'+task.key} className="panel map-task" aria-label="Выбранное задание">
-   <p className="eyebrow">Задание № {task.number} · до {task.points} баллов</p><h2>{v.title}</h2><p>{v.specific}</p>
+ return <div className="route-view">
+  <section className="panel route-board" aria-label="Маршрут по статусам">
+   <h2>Где сейчас задания команды</h2>
+   <p>Нажмите на номер, чтобы увидеть выбранный вариант и связи задания.</p>
+   <ol className="route-stages">{Object.entries(statuses).map(([status,label])=>{
+    const entries=stops.filter(stop=>stop.status===status);
+    return <li key={status} className={'route-stage route-'+status}>
+     <div className="route-station"><span aria-label={'Количество заданий: '+entries.length}>{entries.length}</span></div>
+     <h3>{label}</h3>
+     <div className="route-numbers">{entries.map(({item,title})=><button key={item.key} type="button"
+       aria-controls="route-stop" aria-label={'Задание № '+item.number+'. '+title} title={title}
+       aria-pressed={item.key===task.key} onClick={()=>selectStop(item.key)}>{item.number}</button>)}</div>
+    </li>;
+   })}</ol>
+  </section>
+  <section id="route-stop" className="panel route-stop" ref={stopPanel} tabIndex={-1} aria-label="Остановка маршрута">
+   <div className="route-stop-head"><div><p className="eyebrow">Задание № {task.number} · {statuses[state.status]}</p><h2>{v.title}</h2></div>
+    <button type="button" className="button secondary" onClick={()=>p.openTask(task.key,'checklist')}><FileText size={16}/>Открыть в «Заданиях»</button></div>
    {task.variants.length>1&&<VariantPicker key={team.id+'/'+task.key+'/'+v.id} variants={task.variants} current={v}
     automatic={task.key==='lo-10'} readOnly={!!readOnly} hasProgress={!!(state.steps.length||Object.keys(state.reports).length||Object.keys(state.metrics).length)}
     onSave={choice=>p.update(next=>{const key=ref(team.id,task.key);next.tasks[key]={...getTask(next,team,task),...variantFields(choice)}})}/>}
-   <div className="map-next"><div><h3>{submitted?'Задание сдано':'Ближайший шаг'}</h3><p>{next}</p></div><button className="button primary" onClick={()=>p.openTask(task.key,tab)}>{action}</button></div>
-   <dl className="map-facts"><div><dt>Ответственный</dt><dd>{state.owner||'Не назначен'}</dd></div><div><dt>Дата выполнения</dt><dd>{state.end?dateLabel(state.end,true):'Не назначена'}</dd></div><div><dt>Статус</dt><dd>{statuses[state.status]}</dd></div></dl>
-   <button className="button secondary" onClick={()=>p.openTask(task.key,'checklist')}><FileText size={17}/>Чек-лист и материалы задания</button>
-   <section className="map-block"><h3>Что учесть при выполнении</h3>
+   {(task.number===2||contest.length>0)&&<section className="map-block"><h3>Что учесть по Порядку</h3>
     {task.number===2&&<p>В бортовой журнал входят события Календаря Первых, всероссийские акции Дней единых действий и собственные мероприятия первички. Каждое событие учитывается один раз. Мероприятия по другим конкурсным заданиям в журнал не включаются.</p>}
-    {!contest.length&&task.number!==2&&<p>Это задание можно планировать отдельно.</p>}
     {contest.map(relation)}
-   </section>
+   </section>}
    <section className="map-block"><h3>Связи в плане команды</h3>
     {own.length?own.map(relation):<p>{readOnly?'Команда пока не добавила связей.':'Если команда выполняет задание отдельно, здесь ничего заполнять не нужно.'}</p>}
     {!readOnly&&<div className="map-actions"><button className="button secondary" onClick={()=>p.openTask(task.key,'links')}><Link2 size={16}/>Указать, что сделать сначала</button><button className="button secondary" onClick={()=>p.openEvent(undefined,task.key)}><Plus size={16}/>{task.number===2?'Добавить событие в журнал':'Запланировать событие'}</button></div>}
