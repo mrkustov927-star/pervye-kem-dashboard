@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Проверка входа в кабинет</title>
+<style>body{font:17px/1.5 system-ui,sans-serif;color:#17354d;background:#f2f6fa;margin:0}main{max-width:32rem;margin:8vh auto;background:white;padding:1.5rem;border-radius:16px}h1{font-size:1.6rem}li{padding:.3rem 0}a{color:#17538d}button{background:#193d60;color:white;font:inherit;border:0;border-radius:8px;padding:.5rem 1rem}</style>
+<main><h1>Проверка входа в кабинет</h1><p>Проверка занимает до 12 секунд и проходит без пароля.</p>
+<ul><li>Страница сайта открылась.</li><li id="first">Основное соединение — ожидаем ответ.</li><li id="second">Запасное соединение — ожидаем ответ.</li></ul>
+<p id="result" role="status">Запускаем проверку…</p><button type="button" onclick="location.reload()">Проверить снова</button><p><a href="./">Перейти к заданиям</a></p></main>
+<script src="../connection.js"></script><script>
+(function(){
+ var result=document.getElementById('result');
+ if(!window.kpoConnection){result.textContent='Браузер открыл страницу, но не загрузил модуль подключения. Пришлите организатору снимок этого экрана.';return;}
+ function check(index,id,label){
+  return window.kpoConnection.check(index).catch(function(){return false;}).then(function(ok){
+   document.getElementById(id).textContent=label+(ok?' — сервер ответил.':' — ответ не получен.');return ok;
+  });
+ }
+ Promise.all([check(0,'first','Основное соединение'),check(1,'second','Запасное соединение')]).then(function(values){
+  result.textContent=values.some(Boolean)?'Сервер входа доступен. Перейдите к заданиям. Если вход снова остановится, пришлите организатору снимок сообщения после нажатия «Войти».':'Телефон открыл сайт, но не получил ответ ни по одному адресу сервера. Пришлите организатору снимок этого экрана и укажите, использовали вы Wi-Fi или мобильную сеть.';
+ });
+})();
+</script></html>

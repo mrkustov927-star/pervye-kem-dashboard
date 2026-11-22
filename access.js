@@ -1,5 +1,4 @@
 (()=>{
-  const base='https://geiuieajngqmyrrlicwj.supabase.co/functions/v1/kpo-gateway';
   const version=new URL(document.currentScript.src).searchParams.get('v')||'development';
   const message=document.querySelector('#curatorMessage');
   const gate=document.querySelector('#curatorAccess');
@@ -18,10 +17,7 @@
     }catch{goToLogin();return;}
   }
   async function request(path,options={}){
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),25000);
-    let response;
-    try{response=await fetch(base+path,{...options,signal:controller.signal,cache:'no-store',credentials:'omit',headers:session?{Authorization:'Bearer '+session}:{}});}finally{clearTimeout(timer);}
+    const response=await window.kpoConnection.request(path,{...options,headers:session?{Authorization:'Bearer '+session}:{}});
     if(contest&&response.status===401){goToLogin();throw Error();}
     if(!response.ok){let details={};try{details=await response.clone().json()}catch{}
       throw Error(details.error||'Не удалось загрузить данные. Повторите попытку позже.');}
