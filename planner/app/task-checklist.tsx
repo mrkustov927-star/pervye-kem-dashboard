@@ -11,7 +11,7 @@ function exportChecklist(content:HTMLElement,title:string,print:boolean){
   const meta=doc.createElement('meta');meta.setAttribute('charset','utf-8');doc.head.prepend(meta);
   const viewport=doc.createElement('meta');viewport.name='viewport';viewport.content='width=device-width,initial-scale=1';doc.head.append(viewport);
   const css=doc.createElement('style');
-  css.textContent='body{max-width:800px;margin:auto;padding:1.2rem;color:#18324b;font:16px/1.5 system-ui,sans-serif}h1{font-size:1.6rem}article,details{border:1px solid #ccd7df;border-radius:8px;padding:.8rem;margin:.75rem 0}summary,label{cursor:pointer;font-weight:600}th,td{vertical-align:top;text-align:left;padding:.4rem;border-bottom:1px solid #ddd}th{white-space:nowrap}input{width:18px;height:18px;margin-right:.6rem}svg{display:none}p{margin:.5rem 0}.checklist-item{border-top:1px solid #ddd;padding:.6rem 0}.checklist-item>div{display:inline}.checklist-section>summary small{display:none}@media print{details,article{break-inside:auto}h2,h3,summary{break-after:avoid}}';
+  css.textContent='body{max-width:800px;margin:auto;padding:1.2rem;color:#18324b;font:16px/1.5 system-ui,sans-serif}h1{font-size:1.6rem}article,details{border:1px solid #ccd7df;border-radius:8px;padding:.8rem;margin:.75rem 0}summary,label{cursor:pointer;font-weight:600}th,td{vertical-align:top;text-align:left;padding:.4rem;border-bottom:1px solid #ddd}.worksheet table{width:100%;border-collapse:collapse}.worksheet td,.worksheet th{border:1px solid #a8b4bd;padding:6px}.worksheet td{height:25px}input{width:18px;height:18px;margin-right:.6rem}svg{display:none}p{margin:.5rem 0}.checklist-item{border-top:1px solid #ddd;padding:.6rem 0}.checklist-item>div{display:inline}.checklist-section>summary small{display:none}@media print{details,article{break-inside:auto}h2,h3,summary{break-after:avoid}.checklist-item,tr{break-inside:avoid}}';
   doc.head.append(css);
   const h=doc.createElement('h1');h.textContent=title;doc.body.append(h);
   const copy=content.cloneNode(true) as HTMLElement;
@@ -52,23 +52,27 @@ export function TaskChecklist({task,template,variant,leagueName,patch,openReport
   }
   return <div className="full-checklist" ref={content}>
     <section className="team-brief"><div className="checklist-overview"><h3>Что сделать</h3><div className="checklist-actions" data-screen-only><button type="button" className="button secondary" onClick={()=>exportBlank(true)}><Printer size={15}/>Распечатать бланк</button><button type="button" className="button secondary" onClick={()=>exportBlank(false)}><Download size={15}/>Скачать чек-лист</button></div></div>
-      <p>{variant.specific}</p><h3>Что сдать</h3><ul>{variant.reports.map(r=><li key={r.key}>{r.label}</li>)}</ul>
+      <p>{variant.specific}</p>
+      {variant.needsAnnouncement&&<p className="note"><strong>До мероприятия</strong> · Опубликуйте анонс минимум за один календарный день и сохраните ссылку.</p>}<h3>Что сдать</h3><ul>{variant.reports.map(r=><li key={r.key}>{r.label}</li>)}</ul>
+      {!!data.materials?.length&&<div><strong>Материалы из Порядка</strong><ul>{data.materials?.map(([label,href])=><li key={href}><a href={href} target="_blank" rel="noreferrer">{label}</a></li>)}</ul></div>}
       {data.alternative&&<details><summary>Вариант отчёта для организаций с АОП</summary><p>{data.alternative}</p></details>}
       {data.special&&<p className="note">{data.special}</p>}
     </section>
+    <div className="checklist-overview"><div><h3>Пошаговый чек-лист команды</h3><p data-screen-only>Отмечено {all.filter(done).length} из {all.length}. Отметки помогают следить за подготовкой.</p></div><button data-screen-only type="button" className="button secondary" aria-pressed={remaining} onClick={()=>setRemaining(!remaining)}>{remaining?'Показать всё':'Только оставшиеся'}</button></div>
+    <div className="checklist-sections">{data.sections.map(section=><details className="checklist-section" key={section.id} open={section.id===initialSection}><summary><span>{section.title}</span><small>{section.items.filter(done).length} / {section.items.length}</small></summary>
+      <div>{section.items.map(item=>{const id=prefix+'-checkpoint-'+template.key+'-'+variant.id+'-'+item.id;
+        return <div hidden={remaining&&done(item)} className={'checklist-item '+(done(item)?'checked':'')} key={item.id}><input type="checkbox" id={id} checked={done(item)} disabled={readOnly} onChange={e=>toggle(item,e.target.checked)}/><div><label htmlFor={id}><span className="step-index">{all.indexOf(item)+1}. </span>{item.label}</label><p>{item.detail}</p>
+        {item.method&&<p className="step-method"><b>Как сделать</b> · {item.method}</p>}<p className="checkpoint-evidence"><span><b>Чем подтвердить</b> · {item.evidence}</span></p></div></div>})}
+        {remaining&&section.items.every(done)&&<div data-screen-only className="checklist-finished"><Check size={16}/>В этом разделе всё отмечено</div>}
+        {section.id==='submission'&&openReports&&<button type="button" className="button secondary" onClick={openReports}><FileText size={16}/>Заполнить поля отчёта</button>}
+      </div></details>)}</div>
+    {data.worksheet&&<details className="worksheet"><summary>Рабочий лист для заполнения от руки</summary><p>Распечатайте бланк и заполняйте по мере выполнения. Команда может использовать свою форму записи.</p><table><thead><tr>{data.worksheet.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{Array.from({length:data.rows??3},(_,i)=><tr key={i}>{data.worksheet!.map((h,j)=><td key={h}>{j===0?i+1+'.':' '}</td>)}</tr>)}</tbody></table></details>}
     <section className="grade-guide"><h3>За что начисляют баллы</h3><p>За задание можно получить до <strong>{template.points} баллов</strong>. Эксперт оценивает каждый критерий отдельно и складывает баллы.</p>
       {data.criteria.map(c=><article key={c.title}><div className="grade-title"><strong>{c.title}</strong><b>до {c.maxPoints} б.</b></div>
         <p><strong>{c.lower.length?'Для максимума':'Расчёт'}</strong> · {c.topLevel}</p>{c.lower.length>0?<details><summary>Шкала оценивания</summary><table><thead><tr><th scope="col">Баллы</th><th scope="col">Что подтверждают материалы команды</th></tr></thead><tbody>{[...c.lower,c.topLevel].map((label,i)=><tr key={i}><th scope="row">{i*5}</th><td>{label}</td></tr>)}</tbody></table></details>:<p className="note">Например, три зачтённых мероприятия дают 12 баллов по этому критерию. Одно мероприятие учитывается один раз в одной категории.</p>}
       </article>)}
       {template.key==='pl-15'&&<p className="note"><strong>Дополнительно за шефство — 20 баллов к итогу Общего зачёта.</strong> Подшефная первичка должна выполнить все 10 заданий Лиги открытий и получить по экспертной оценке не менее 5 баллов за каждое. Решение утверждает Оргкомитет по п. 2.7.</p>}
     </section>
-    <div className="checklist-overview"><div><h3>Чек-лист команды</h3><p data-screen-only>Отмечено {all.filter(done).length} из {all.length}. Отметки помогают следить за подготовкой.</p></div><button data-screen-only type="button" className="button secondary" aria-pressed={remaining} onClick={()=>setRemaining(!remaining)}>{remaining?'Показать всё':'Только оставшиеся'}</button></div>
-    <div className="checklist-sections">{data.sections.map(section=><details className="checklist-section" key={section.id} open={section.id===initialSection}><summary><span>{section.title}</span><small>{section.items.filter(done).length} / {section.items.length}</small></summary>
-      <div>{section.items.map(item=>{const id=prefix+'-checkpoint-'+template.key+'-'+variant.id+'-'+item.id;
-        return <div hidden={remaining&&done(item)} className={'checklist-item '+(done(item)?'checked':'')} key={item.id}><input type="checkbox" id={id} checked={done(item)} disabled={readOnly} onChange={e=>toggle(item,e.target.checked)}/><div><label htmlFor={id}>{item.label}</label><p>{item.detail}</p><p className="checkpoint-evidence"><span><b>Чем подтвердить</b> · {item.evidence}</span></p></div></div>})}
-        {remaining&&section.items.every(done)&&<div data-screen-only className="checklist-finished"><Check size={16}/>В этом разделе всё отмечено</div>}
-        {section.id==='submission'&&openReports&&<button type="button" className="button secondary" onClick={openReports}><FileText size={16}/>Заполнить поля отчёта</button>}
-      </div></details>)}</div>
     {data.pitfalls.length>0&&<details className="checklist-pitfalls"><summary>Перед отправкой проверьте</summary><ul>{data.pitfalls.map(t=><li key={t}>{t}</li>)}</ul></details>}
     <p className="checklist-source-note">Порядок выполнения заданий Общего зачёта · страницы {data.sourcePages.join(', ')}.</p>
   </div>;
