@@ -28,8 +28,14 @@
     const script=document.createElement('script');script.src='./app.js?v='+encodeURIComponent(version);
     await new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=()=>reject(Error('Не удалось открыть кабинет.'));document.body.append(script)});
     gate.hidden=true;
-    document.querySelectorAll('[data-curator-logout]').forEach(button=>{button.textContent='Выбор раздела';button.addEventListener('click',goHome)});
     window.DASHBOARD_PORTAL.open();
   }
-  open().catch(error=>{message.textContent=error.message||'Нет связи с сервером. Обновите страницу.'});
+  const recovery=document.querySelector('#loadRecovery');
+  function loadContent(){
+    recovery.hidden=true;
+    message.textContent='Загружаем опубликованные материалы.';
+    open().catch(()=>{message.textContent='Пока не удалось загрузить календарь и материалы.';recovery.hidden=false;});
+  }
+  document.querySelector('#retryContent').addEventListener('click',loadContent);
+  loadContent();
 })();

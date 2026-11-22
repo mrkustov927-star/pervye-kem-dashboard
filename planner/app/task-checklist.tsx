@@ -1,11 +1,11 @@
 'use client';
 import {useId,useRef,useState} from 'react';
-import {Check,Download,FileText} from 'lucide-react';
+import {Check,Download,FileText,Printer} from 'lucide-react';
 import type {Task,Template,Variant} from './model';
 import {checklistFor,checkpointKey,isCheckpointDone} from './checklists';
 import type {ChecklistItem} from './checklists';
 
-function downloadChecklist(content:HTMLElement,title:string){
+function exportChecklist(content:HTMLElement,title:string,print:boolean){
   const doc=document.implementation.createHTMLDocument(title);
   doc.documentElement.lang='ru';
   const meta=doc.createElement('meta');meta.setAttribute('charset','utf-8');doc.head.prepend(meta);
@@ -21,13 +21,29 @@ function downloadChecklist(content:HTMLElement,title:string){
   copy.querySelectorAll('input').forEach(el=>{el.disabled=false;el.checked=false;el.removeAttribute('checked')});
   copy.querySelectorAll('.checked').forEach(el=>el.classList.remove('checked'));
   doc.body.append(copy);
-  const url=URL.createObjectURL(new Blob(['<!doctype html>',doc.documentElement.outerHTML],{type:'text/html;charset=utf-8'}));
+  const html='<!doctype html>'+doc.documentElement.outerHTML;
+  if(print){
+    const frame=document.createElement('iframe');
+    frame.setAttribute('aria-hidden','true');frame.tabIndex=-1;
+    frame.style.cssText='position:fixed;left:-10000px;top:0;width:800px;height:1000px;border:0';
+    frame.onload=()=>{
+      const win=frame.contentWindow;
+      if(!win)return;
+      win.addEventListener('afterprint',()=>setTimeout(()=>frame.remove(),0),{once:true});
+      win.focus();win.print();
+    };
+    frame.srcdoc=html;document.body.append(frame);return;
+  }
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download=title.replace(/[<>:"/\\|?*]/g,' ') + '.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-export function TaskChecklist({task,template,variant,leagueName,patch,openReports,readOnly=false}:{task:Task;template:Template;variant:Variant;leagueName:string;patch:(value:Partial<Task>)=>void;openReports?:()=>void;readOnly?:boolean}){
+export function TaskChecklist({task,template,variant,leagueName,patch,openReports,readOnly=false,initialSection='prepare'}:{task:Task;template:Template;variant:Variant;leagueName:string;patch:(value:Partial<Task>)=>void;initialSection?:string;openReports?:()=>void;readOnly?:boolean}){
   const data=checklistFor(template,variant),[remaining,setRemaining]=useState(false),content=useRef<HTMLDivElement>(null);
   const prefix=useId();
+  function exportBlank(print:boolean){
+    if(content.current)exportChecklist(content.current,leagueName+' · № '+template.number+' · '+variant.title,print);
+  }
   const all=data.sections.flatMap(s=>s.items);
   const done=(item:ChecklistItem)=>isCheckpointDone(task,variant.id,item);
   function toggle(item:ChecklistItem,checked:boolean){
@@ -35,7 +51,7 @@ export function TaskChecklist({task,template,variant,leagueName,patch,openReport
     patch({checklist:{...task.checklist,[checkpointKey(variant.id,item.id)]:checked}});
   }
   return <div className="full-checklist" ref={content}>
-    <section className="team-brief"><div className="checklist-overview"><h3>Что сделать</h3><button data-screen-only type="button" className="button secondary" onClick={()=>content.current&&downloadChecklist(content.current,leagueName+' · № '+template.number+' · '+variant.title)}><Download size={15}/>Скачать чек-лист</button></div>
+    <section className="team-brief"><div className="checklist-overview"><h3>Что сделать</h3><div className="checklist-actions" data-screen-only><button type="button" className="button secondary" onClick={()=>exportBlank(true)}><Printer size={15}/>Распечатать бланк</button><button type="button" className="button secondary" onClick={()=>exportBlank(false)}><Download size={15}/>Скачать чек-лист</button></div></div>
       <p>{variant.specific}</p><h3>Что сдать</h3><ul>{variant.reports.map(r=><li key={r.key}>{r.label}</li>)}</ul>
       {data.alternative&&<details><summary>Вариант отчёта для организаций с АОП</summary><p>{data.alternative}</p></details>}
       {data.special&&<p className="note">{data.special}</p>}
@@ -47,7 +63,7 @@ export function TaskChecklist({task,template,variant,leagueName,patch,openReport
       {template.key==='pl-15'&&<p className="note"><strong>Дополнительно за шефство — 20 баллов к итогу Общего зачёта.</strong> Подшефная первичка должна выполнить все 10 заданий Лиги открытий и получить по экспертной оценке не менее 5 баллов за каждое. Решение утверждает Оргкомитет по п. 2.7.</p>}
     </section>
     <div className="checklist-overview"><div><h3>Чек-лист команды</h3><p data-screen-only>Отмечено {all.filter(done).length} из {all.length}. Отметки помогают следить за подготовкой.</p></div><button data-screen-only type="button" className="button secondary" aria-pressed={remaining} onClick={()=>setRemaining(!remaining)}>{remaining?'Показать всё':'Только оставшиеся'}</button></div>
-    <div className="checklist-sections">{data.sections.map(section=><details className="checklist-section" key={section.id} open={section===data.sections[0]}><summary><span>{section.title}</span><small>{section.items.filter(done).length} / {section.items.length}</small></summary>
+    <div className="checklist-sections">{data.sections.map(section=><details className="checklist-section" key={section.id} open={section.id===initialSection}><summary><span>{section.title}</span><small>{section.items.filter(done).length} / {section.items.length}</small></summary>
       <div>{section.items.map(item=>{const id=prefix+'-checkpoint-'+template.key+'-'+variant.id+'-'+item.id;
         return <div hidden={remaining&&done(item)} className={'checklist-item '+(done(item)?'checked':'')} key={item.id}><input type="checkbox" id={id} checked={done(item)} disabled={readOnly} onChange={e=>toggle(item,e.target.checked)}/><div><label htmlFor={id}>{item.label}</label><p>{item.detail}</p><p className="checkpoint-evidence"><span><b>Чем подтвердить</b> · {item.evidence}</span></p></div></div>})}
         {remaining&&section.items.every(done)&&<div data-screen-only className="checklist-finished"><Check size={16}/>В этом разделе всё отмечено</div>}

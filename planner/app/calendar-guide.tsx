@@ -30,15 +30,13 @@ export function CalendarGuide(p:ViewProps){
       done
     ];
     const current=phaseDone.findIndex(x=>!x);
-    let instruction='Открыть задание';
-    if(!task.owner.trim())instruction='Назначить ответственного';
-    else if(!task.start||!task.end||!task.submit)instruction='Определить даты подготовки, выполнения и отчёта';
-    else if(pending('prepare'))instruction=pending('prepare')!.label;
-    else if(pending('do'))instruction=pending('do')!.label;
-    else if(pending('evidence'))instruction=pending('evidence')!.label;
-    else if(!done)instruction='Проверить отчёт и отметить сдачу';
-    const deadline=task.end||choice.recommended.end;
-    return {template,task,choice,current,phaseDone,instruction,deadline,planned:!!task.end};
+    const section=current===1?'prepare':current===2?'do':['quality','evidence','submission'].find(id=>pending(id));
+    const instruction=current===0
+      ? (!task.owner.trim()?'Назначить ответственного':'Определить даты подготовки, выполнения и отчёта')
+      : (section&&pending(section)?.label)||'Проверить отчёт и отметить сдачу';
+    const tab=current===0?'plan':section?'checklist.'+section:'reports';
+    const deadline=(current===3?task.submit:task.end)||choice.recommended.end;
+    return {template,task,choice,current,phaseDone,instruction,tab,deadline,planned:current===3?!!task.submit:!!task.end};
   }).filter(x=>x.task.status!=='submitted'&&x.current!==-1).sort((a,b)=>
     a.deadline.localeCompare(b.deadline)||a.template.number-b.template.number
   );
@@ -46,9 +44,8 @@ export function CalendarGuide(p:ViewProps){
   return <section className="panel calendar-guide" aria-labelledby="calendar-guide-title">
     <div className="calendar-guide-head">
       <div>
-        <p className="eyebrow">ПОНЯТНЫЙ МАРШРУТ</p>
-        <h2 id="calendar-guide-title">Маленькими шагами — к результату</h2>
-        <p>Для первички «{p.team.name}». Начните с ближайшего дела, остальное подождёт.</p>
+        <h2 id="calendar-guide-title">Что дальше по плану</h2>
+        <p>Для первички «{p.team.name}». Задания расположены по ближайшей дате.</p>
       </div>
     </div>
     <div className="calendar-guide-phases" aria-label="Этапы работы над каждым заданием">
@@ -59,7 +56,7 @@ export function CalendarGuide(p:ViewProps){
     </div>
     <div className="calendar-guide-heading">
       <h3>Ближайшие действия</h3>
-      <span>Показываем только три</span>
+      <span>{nearest.length} из {entries.length}</span>
     </div>
     {nearest.length?<div className="calendar-guide-list">
       {nearest.map(entry=><article className="calendar-guide-task" key={entry.template.key}>
@@ -75,7 +72,7 @@ export function CalendarGuide(p:ViewProps){
               <span>{stage.title}</span>
             </span>)}
           </div>
-          <button className="button secondary" type="button" onClick={()=>p.openTask(entry.template.key)}>Открыть задание <ChevronRight size={15}/></button>
+          <button className="button secondary" type="button" onClick={()=>p.openTask(entry.template.key,entry.tab)}>{entry.tab==='plan'?'Открыть план и сроки':entry.tab==='reports'?'Открыть отчёт':'Открыть чек-лист'} <ChevronRight size={15}/></button>
         </div>
       </article>)}
     </div>:<div className="calendar-guide-empty"><Check size={20}/>Все конкурсные задания отмечены как сданные. Можно проверить журнал мероприятий и документы.</div>}

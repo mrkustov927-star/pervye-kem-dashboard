@@ -11,11 +11,11 @@
   <link rel="stylesheet" href="styles.css?v=20261122-audit" />
 </head>
 <body>
-  <section class="curator-access" id="curatorAccess" aria-labelledby="curatorTitle"><div class="curator-access-card"><img src="pervye-logo.svg" alt="Первые" width="156" height="64" /><p class="curator-kicker">Кемский муниципальный округ</p><h1 id="curatorTitle">Открываем рабочий кабинет…</h1><p id="curatorMessage" role="status" aria-live="polite">Загружаем опубликованные материалы.</p></div></section>
+  <section class="curator-access" id="curatorAccess" aria-labelledby="curatorTitle"><div class="curator-access-card"><img src="pervye-logo.svg" alt="Первые" width="156" height="64" /><p class="curator-kicker">Кемский муниципальный округ</p><h1 id="curatorTitle">Открываем рабочий кабинет…</h1><p id="curatorMessage" role="status" aria-live="polite">Загружаем опубликованные материалы.</p><div id="loadRecovery" hidden><button class="workspace-home" id="retryContent" type="button">Повторить загрузку</button> <a class="workspace-home" href="./planner/">Перейти к заданиям первичек</a></div></div></section>
   <section class="workspace-picker" id="workspacePicker" aria-labelledby="workspaceTitle" hidden>
     <header class="portal-header wrap">
       <img src="pervye-logo.svg" alt="Первые" width="156" height="64" />
-      <button class="curator-logout" data-curator-logout type="button">Выбор раздела</button>
+
     </header>
     <div class="portal-choice wrap">
       <p class="curator-kicker">Кемский муниципальный округ</p>
@@ -31,7 +31,7 @@
         <a class="workspace-choice choice-primary" href="./planner/">
           <span class="choice-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M16 8h16v14a8 8 0 0 1-16 0V8ZM16 12H9v7a7 7 0 0 0 7 7M32 12h7v7a7 7 0 0 1-7 7M24 30v10M17 40h14"/></svg></span>
           <h2>Конкурс первичных отделений</h2>
-          <p>Сроки сезона 2026–2027, условия участия, документы и конкурсные задания.</p>
+          <p>Выберите первичку, сравните варианты задания и проверьте материалы по чек-листу.</p>
           <span class="choice-action">Открыть планировщик</span>
         </a>
       </div>
@@ -45,7 +45,7 @@
         <img class="brand-logo" src="pervye-logo.svg" alt="Первые" width="212" height="90" />
         <span class="brand-context" id="districtLabel">Кемский муниципальный округ</span>
       </a>
-      <div class="workspace-header-actions"><a class="workspace-home" href="#home">Выбор раздела</a><button class="curator-logout" id="curatorLogout" data-curator-logout type="button">Выбор раздела</button></div>
+      <div class="workspace-header-actions"><a class="workspace-home" href="#home">Выбор раздела</a></div>
       <nav class="header-links" aria-label="Навигация">
         <a href="#now">Актуальное</a>
         <a href="#calendar">Календарь</a>
@@ -235,7 +235,7 @@
     <header class="site-header">
       <div class="wrap header-inner primary-header">
         <a class="brand" href="#home" aria-label="Выбор раздела"><img class="brand-logo" src="pervye-logo.svg" alt="Первые" width="212" height="90" /></a>
-        <div class="workspace-header-actions"><a class="workspace-home" href="#home">Выбор раздела</a><button class="curator-logout" data-curator-logout type="button">Выбор раздела</button></div>
+        <div class="workspace-header-actions"><a class="workspace-home" href="#home">Выбор раздела</a></div>
       </div>
     </header>
     <main class="primary-workspace-main">

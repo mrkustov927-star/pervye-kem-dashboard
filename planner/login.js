@@ -24,5 +24,11 @@
     document.querySelector('#gate').hidden=true;
     document.querySelector('#tools').hidden=false;
   }
-  open().catch(error=>{status.textContent=error.message||'Ошибка загрузки.'});
+  const actions=document.querySelector('#retryActions');
+  function loadPlanner(){
+    actions.hidden=true;
+    open().catch(()=>{status.textContent='Пока не удалось загрузить задания.';actions.hidden=false;});
+  }
+  document.querySelector('#retryPlanner').addEventListener('click',loadPlanner);
+  loadPlanner();
 })();

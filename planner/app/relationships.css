@@ -48,3 +48,12 @@
 .route-stop .full-checklist{margin-top:18px}.route-stop .checklist-item label{font-weight:650}
 @media(max-width:850px){.task-lookup{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.task-lookup label:first-child{grid-column:1/-1}}
 .task-matches .button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere}
+
+.view-fields{margin:0;border:0;min-width:0}
+.plan-problems{width:100%}.context-bar:has(.plan-problems){flex-wrap:wrap}
+.plan-problems summary{color:#815315;font-weight:650;cursor:pointer}
+.plan-problems .text-button{display:block;white-space:normal;text-align:left;margin-top:8px}
+
+@media(max-width:650px){.event-register .panel-title{flex-wrap:wrap}.event-register .panel-title .button{white-space:normal}}
+.route-stop[hidden]{display:none}
+.checklist-actions{display:flex;flex-wrap:wrap;gap:8px}

@@ -11,10 +11,8 @@ const labels: Record<TaskRelation['kind'], string> = {
  before: 'По плану команды · сначала', after: 'По плану команды · затем', event: 'Событие команды',
 };
 
-function SelectedTask({p,task,state,current,readOnly}:{p:ViewProps;task:Template;state:Task;current:Variant;readOnly:boolean}) {
+function SelectedTask({p,task,state,current,readOnly,shown,onPreview}:{p:ViewProps;task:Template;state:Task;current:Variant;shown:Variant;onPreview:(id:string)=>void;readOnly:boolean}) {
  const {team}=p;
- const [candidate,setCandidate]=useState(current.id);
- const shown=task.variants.find(v=>v.id===candidate)??current;
  const preview=shown.id!==current.id;
  const automatic=task.key==='lo-10';
  const patch=(fields:Partial<Task>)=>p.update(next=>{
@@ -28,7 +26,7 @@ function SelectedTask({p,task,state,current,readOnly}:{p:ViewProps;task:Template
   </div>
   {task.variants.length>1&&<fieldset className="map-variants"><legend>Варианты задания</legend>
    <div className="map-variant-options">{task.variants.map((v,i)=><label key={v.id}>
-    <input type="radio" name="map-variant" checked={shown.id===v.id} onChange={()=>setCandidate(v.id)}/>
+    <input type="radio" name="map-variant" checked={shown.id===v.id} onChange={()=>onPreview(v.id)}/>
     <span><small>Вариант {i+1}{v.id===current.id?' · в плане команды':''}</small><strong>{v.title}</strong></span>
    </label>)}</div>
    {automatic&&<p>Без шефа команда выполняет вариант 1, с шефом — вариант 2.</p>}
@@ -53,6 +51,14 @@ export function MapView(p: ViewProps) {
  const own = groups.filter(g => ['before','after','event'].includes(g.kind));
  const [query,setQuery]=useState('');
  const [statusFilter,setStatusFilter]=useState('');
+ const [preview,setPreview]=useState<{scope:string;id:string}|null>(null);
+ const scope=task.key+'/'+v.id;
+ const shown=(preview?.scope===scope&&task.variants.find(option=>option.id===preview.id))||v;
+ const matchingVariant=(item:Template)=>{
+  const term=query.trim().toLocaleLowerCase('ru');
+  const found=term?item.variants.filter(option=>option.title.toLocaleLowerCase('ru').includes(term)):[];
+  return found.length===1?found[0]:undefined;
+ };
  const stopPanel = useRef<HTMLElement>(null);
  const stops = list.map(item => {
   const progress = getTask(plan,team,item);
@@ -61,6 +67,10 @@ export function MapView(p: ViewProps) {
  const matches=stops.filter(({item,status})=>(!statusFilter||statusFilter===status)&&
   [String(item.number),item.title,...item.variants.map(option=>option.title),getTask(plan,team,item).owner].join(' ').toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')));
  function selectStop(key:string) {
+  const item=list.find(item=>item.key===key)!;
+  const choice=matchingVariant(item);
+  if(!matches.some(stop=>stop.item.key===key)){setQuery('');setStatusFilter('')}
+  setPreview(choice?{scope:key+'/'+variant(item,getTask(plan,team,item),team).id,id:choice.id}:null);
   p.selectTask(key);
   if(window.matchMedia('(max-width:850px)').matches){
    requestAnimationFrame(()=>{stopPanel.current?.focus({preventScroll:true});stopPanel.current?.scrollIntoView({block:'start'})});
@@ -94,7 +104,7 @@ export function MapView(p: ViewProps) {
     <label>Поиск<input type="search" placeholder="Название, номер, ответственный" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <label>Статус<select aria-label="Фильтр по статусу" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="">Все статусы</option>{Object.entries(statuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
    </div>
-   {(query||statusFilter)&&<div className="task-matches" aria-live="polite">{matches.length?matches.map(({item,title})=><button type="button" className="button secondary" key={item.key} onClick={()=>selectStop(item.key)}>№ {item.number}. {item.variants.length>1?item.title:title}</button>):<p>По этим условиям заданий нет.</p>}</div>}
+   {(query||statusFilter)&&<div className="task-matches" aria-live="polite">{matches.length?matches.map(({item,title})=><button type="button" className="button secondary" key={item.key} onClick={()=>selectStop(item.key)}>№ {item.number}. {matchingVariant(item)?.title??(item.variants.length>1?item.title:title)}</button>):<p>По этим условиям заданий нет.</p>}</div>}
    <details className="route-overview"><summary>Маршрут команды по статусам</summary>
    <ol className="route-stages">{Object.entries(statuses).map(([status,label])=>{
     const entries=stops.filter(stop=>stop.status===status);
@@ -107,8 +117,8 @@ export function MapView(p: ViewProps) {
     </li>;
    })}</ol></details>
   </section>
-  <section id="route-stop" className="panel route-stop" ref={stopPanel} tabIndex={-1} aria-label="Выбранное задание">
-   <SelectedTask key={team.id+'/'+task.key+'/'+v.id} p={p} task={task} state={state} current={v} readOnly={!!readOnly}/>
+  <section hidden={!matches.some(stop=>stop.item.key===task.key)} id="route-stop" className="panel route-stop" ref={stopPanel} tabIndex={-1} aria-label="Выбранное задание">
+   <SelectedTask key={team.id+'/'+task.key+'/'+v.id} p={p} task={task} state={state} current={v} shown={shown} onPreview={id=>setPreview({scope,id})} readOnly={!!readOnly}/>
    {(task.number===2||contest.length>0)&&<section className="map-block"><h3>Что учесть по Порядку</h3>
     {task.number===2&&<p>В бортовой журнал входят события Календаря Первых, всероссийские акции Дней единых действий и собственные мероприятия первички. Каждое событие учитывается один раз. Мероприятия по другим конкурсным заданиям в журнал не включаются.</p>}
     {contest.map(relation)}
