@@ -10,10 +10,10 @@
   const now=new Date(todayMoscow+"T12:00:00");
   const monthNames=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
   const monthShort=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
-  let taskFilter="all";
+  let currentFilter="all";
+  let showCalendarHistory=false;
   const rawMonth=new URLSearchParams(window.location.search).get("month");
   const requestedMonth=/^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth||"")?rawMonth:null;
-  let projectFilter="all";
   let archiveFilter=requestedMonth||"all";
   const currentYm=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
   let calendarMonth=currentYm;
@@ -55,6 +55,36 @@
     return !e||e>=now;
   };
 
+  const activeItem=i=>isPublic(i)&&(!expired(i)||reportPending(i));
+  const fmtYear=d=>parseDate(d)?fmt(d)+" "+d.slice(0,4):"Срок уточняется";
+  function currentGroups(){
+    const active=items.filter(activeItem);
+    const owners=new Map();
+    active.filter(i=>i.type!=="task"&&!expired(i)).forEach(parent=>stagesFor(parent).forEach(stage=>{
+      const child=active.find(i=>i.id===stage.itemId&&i.type==="task");
+      if(child&&!owners.has(child.id))owners.set(child.id,parent.id);
+    }));
+    const documentItems=new Set((D.documents||[]).map(d=>d.itemId).filter(Boolean));
+    return active.filter(i=>!owners.has(i.id)&&(i.type!=="info"||!documentItems.has(i.id))).map(item=>{
+      const tasks=active.filter(i=>owners.get(i.id)===item.id);
+      const deadline=[nextDeadline(item),...tasks.map(nextDeadline)].filter(Boolean).sort()[0]||null;
+      return {item,tasks,deadline};
+    }).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999")||a.item.title.localeCompare(b.item.title,"ru"));
+  }
+  function calendarViewEntries(includePast=false){
+    return calendarEntries().filter(e=>includePast||(e.date>=todayMoscow&&e.item.status!=="done"&&(!expired(e.item)||e.kind==="report"&&reportPending(e.item))));
+  }
+  function calendarViewStages(month,includePast=false){
+    return stagesInMonth(month).filter(({item,stage})=>{
+      const end=stage.end||stage.start||monthEnd(stage.monthEnd||stage.monthStart);
+      return includePast||(!expired(item)&&(!end||end>=todayMoscow));
+    });
+  }
+  function canonicalSection(hash){
+    if(requestedMonth&&(!hash||hash==="#projects"))return "#archive";
+    return ({"#projects":"#now","#week":"#calendar"})[hash]||hash;
+  }
+
   const preferencesKey="pervye-kem-dashboard:preferences:v1";
   function readPreferences(){
     try{const value=JSON.parse(localStorage.getItem(preferencesKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch{return {}}
@@ -80,11 +110,13 @@
   function rememberSections(){
     if(!preferences.sections||typeof preferences.sections!=="object"||Array.isArray(preferences.sections)) preferences.sections={};
     const state={};
-    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{const id=disclosureId(el);if(id!=="archive")state[id]=el.open});
+    sectionDisclosures().forEach(el=>{const id=disclosureId(el);if(id!=="archive")state[id]=el.open});
     preferences.sections[disclosureMode()]=state;
     savePreferences();
   }
   function revealSection(hash){
+    const canonical=canonicalSection(hash);
+    if(canonical!==hash){const url=new URL(location.href);url.hash=canonical;history.replaceState(null,"",url);hash=canonical}
     if(!/^#[a-z-]+$/.test(hash)) return;
     const section=$(hash);
     const disclosure=section&&$("[data-section-disclosure]",section);
@@ -92,14 +124,11 @@
   }
   function adaptSections(){
     const state=preferences.sections?.[disclosureMode()]||{};
-    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{
+    sectionDisclosures().forEach(el=>{
       const id=disclosureId(el);
-      el.open=id==="archive"?false:typeof state[id]==="boolean"?state[id]:!compactScreen.matches&&id!=="favorites";
+      el.open=id==="archive"?false:typeof state[id]==="boolean"?state[id]:(id==="now"||!compactScreen.matches&&!["favorites","updates"].includes(id));
     });
     revealSection(location.hash);
-    if(requestedMonth&&(!location.hash||location.hash==="#projects")){
-      const url=new URL(location.href);url.hash="archive";history.replaceState(null,"",url);revealSection("#archive");
-    }
   }
   function setSectionCount(id,count){
     const el=$('[data-section-count="'+id+'"]');
@@ -110,7 +139,7 @@
     adaptSections();
     compactScreen.addEventListener("change",adaptSections);
     window.addEventListener("hashchange",()=>revealSection(location.hash));
-    [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>el.addEventListener("toggle",rememberSections));
+    sectionDisclosures().forEach(el=>el.addEventListener("toggle",rememberSections));
   });
 
   function applyView(){
@@ -196,7 +225,7 @@
     items.filter(isPublic).forEach(i=>{
       const kind=i.calendarKind||(i.type==="action"?"concept":i.type==="event"?"event":"task");
       if(i.calendarDisplayDate)push(i.calendarDisplayDate,i,i.calendarDisplayKind||kind);
-      else if(stagesFor(i).length){/* Structured stages replace broad project markers. */}
+      else if(i.type==="project"&&stagesFor(i).length){/* Structured stages replace broad project markers. */}
       else if(i.calendarMap&&typeof i.calendarMap==="object"){
         ["start","deadline","eventDate","reportDeadline"].forEach(field=>push(i[field],i,i.calendarMap[field]));
       }else if(kind==="concept"){
@@ -215,7 +244,8 @@
         if(stage.end&&stage.end!==stage.start)push(stage.end,target,stage.kind||"event",{...extra,title:stage.title+(stage.start?" — завершение":"")});
       });
     });
-    return events.sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,"ru"));
+    const unique=events.filter(e=>e.stageId||!events.some(other=>other.stageId&&other.date===e.date&&other.item.id===e.item.id&&other.kind===e.kind));
+    return unique.sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,"ru"));
   }
   function stagePeriod(stage){
     let text="";
@@ -235,26 +265,12 @@
       return from&&from<=month&&to>=month;
     }).map(stage=>({item,stage}))).sort((a,b)=>(a.stage.start||a.stage.end||a.stage.monthStart).localeCompare(b.stage.start||b.stage.end||b.stage.monthStart));
   }
-  function renderWeek(){
-    const entries=[];
-    const push=(i,date,kind,label)=>{
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return;
-      const left=days(date);if(left<0||left>6)return;
-      if(!entries.some(e=>e.item.id===i.id&&e.date===date&&e.kind===kind&&e.item.title===i.title))entries.push({item:i,date,kind,left,label});
-    };
-    calendarEntries().filter(e=>e.item.status!=="done").forEach(e=>push({...e.item,title:e.title},e.date,e.kind,e.label));
-    entries.sort((a,b)=>a.left-b.left||a.item.title.localeCompare(b.item.title,"ru"));
-    const last=addDaysIso(todayMoscow,6);
-    $("#weekRange").textContent=fmt(todayMoscow)+" — "+fmt(last)+" · ближайшие 7 дней";
-    setSectionCount("week",entries.length);
-    $("#weekList").innerHTML=entries.map(e=>'<button class="week-entry" data-open="'+esc(e.item.id)+'"><span class="week-date">'+esc(fmtShort(e.date))+'</span><span class="week-copy"><small>'+esc(e.label)+'</small><strong>'+esc(e.item.title)+'</strong></span><span class="week-countdown '+(e.left<=1?"soon":"")+'">'+(e.left===0?"Сегодня":e.left===1?"Завтра":"Через "+e.left+" дн.")+'</span><span class="week-arrow" aria-hidden="true">→</span></button>').join("")||'<div class="empty">На ближайшие 7 дней в календаре пока нет событий и сроков. Все материалы доступны в разделах ниже.</div>';
-  }
   function setupSidebar(){
     const sections=$$("main > section[id]").filter(el=>el.id!=="top");
     const update=()=>{
       let active="";
       sections.forEach(el=>{if(el.getBoundingClientRect().top<=150)active=el.id});
-      $$(".desktop-sidebar a").forEach(a=>{
+      $$(".desktop-sidebar a,.header-links a,.mobile-nav a").forEach(a=>{
         const current=a.hash==="#"+active;
         if(current)a.setAttribute("aria-current","location");else a.removeAttribute("aria-current");
       });
@@ -289,17 +305,21 @@
     put("#heroLead",s.heroLead);
     put("#heroPrimary",s.heroPrimary);
     put("#heroSecondary",s.heroSecondary);
-    put("#now-title",s.nowTitle);
+    put("#now-title",s.nowTitle&&!/^Что требует внимания$/.test(s.nowTitle)?s.nowTitle:"Актуальное");
     put("#nowSubtitle",s.nowSubtitle);
-    put("#calendar-title",s.calendarTitle);
+    put("#calendar-title",s.calendarTitle&&s.calendarTitle!=="Календарь Первых"?s.calendarTitle:"Календарь");
     put("#calendarSubtitle",s.calendarSubtitle);
-    put("#projects-title",s.projectsTitle);
-    put("#projectsSubtitle",s.projectsSubtitle);
-    put("#docs-title",s.docsTitle);
+    put("#docs-title",s.docsTitle&&s.docsTitle!=="Ссылки и документы"?s.docsTitle:"Документы");
     put("#docsSubtitle",s.docsSubtitle);
     const legacyArchiveTitle=/^Прошедшие задания и мероприятия(?:\s*\(.*\))?$/i;
-    put("#archiveTitle",s.archiveTitle&&!legacyArchiveTitle.test(s.archiveTitle)?s.archiveTitle:"Архив мероприятий");
+    put("#archiveTitle",s.archiveTitle&&!legacyArchiveTitle.test(s.archiveTitle)?s.archiveTitle:"Архив");
     put("#footerSubtitle",s.footerSubtitle);
+    const navTitles={now:"#now-title",calendar:"#calendar-title",docs:"#docs-title",favorites:"#favorites-title",archive:"#archiveTitle",updates:"#updates-title"};
+    Object.entries(navTitles).forEach(([id,selector])=>{
+      const title=$(selector)?.textContent;if(!title)return;
+      $$('.header-links a[href="#'+id+'"],.desktop-sidebar a[href="#'+id+'"],.mobile-nav a[href="#'+id+'"]')
+        .forEach(link=>{const count=link.querySelector("[data-nav-count]");link.replaceChildren(document.createTextNode(title+(count?" ":"")));if(count)link.append(count)});
+    });
     const banner=$("#kindnessBanner");
     if(banner){
       const enabled=s.announcementEnabled!=="false";
@@ -340,15 +360,13 @@
   }
 
   function renderHero(){
-    const active=items.filter(i=>isPublic(i)&&(!expired(i)||reportPending(i))&&["task","project","action","event"].includes(i.type)).map(i=>({...i,taskDeadline:nextDeadline(i)}));
-    const priorityRank={urgent:0,high:1,normal:2};
-    const upcoming=active.filter(i=>i.taskDeadline)
-      .sort((a,b)=>parseDate(a.taskDeadline)-parseDate(b.taskDeadline)||(priorityRank[a.priority]??2)-(priorityRank[b.priority]??2))
-      .slice(0,3);
-    $("#heroMiniList").innerHTML=upcoming.map(i=>{
-      const d=parseDate(i.taskDeadline);
-      return '<button class="hero-mini-card" data-open="'+i.id+'"><span class="mini-date '+(i.priority==="urgent"?"urgent":"")+'"><b>'+d.getDate()+'</b><small>'+monthShort[d.getMonth()]+'</small></span><span class="mini-info"><small>'+esc(i.category)+'</small><b>'+esc(i.title)+'</b><em>'+esc(deadlineLabel(i))+'</em></span><span class="mini-arrow">→</span></button>';
-    }).join("");
+    const week=calendarViewEntries().filter(e=>days(e.date)<=6).length;
+    const archived=items.filter(i=>isPublic(i)&&expired(i)).length;
+    $("#heroOverview").innerHTML=[
+      ["#now",currentGroups().length,"Актуальное","Акции, проекты и задания"],
+      ["#calendar",week,"Календарь","Даты на ближайшие 7 дней"],
+      ["#archive",archived,"Архив","Завершённые мероприятия"]
+    ].map(([href,count,title,text])=>'<a href="'+href+'"><b>'+count+'</b><span><strong>'+title+'</strong><small>'+text+'</small></span></a>').join("");
   }
 
   function audienceText(i){
@@ -357,88 +375,41 @@
     return a.length?"Кому: "+a.join(", "):"";
   }
 
-  function quickMeta(i){
-    if((i.deliverables||[]).length) return "Результат: "+i.deliverables[0];
-    if((i.formats||[]).length) return "Форматы участия: "+i.formats.length;
-    if((i.steps||[]).length) return "Порядок действий: "+i.steps.length+" шагов";
-    return "";
-  }
-
-  function renderTasks(){
-    const filters=[["all","Все"],["urgent","Срочно"],["high","Высокий приоритет"],["report","Нужен отчёт"],["schools","Для школ"]];
-    $("#taskFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(taskFilter===f[0]?"active":"")+'" data-task-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>isPublic(i)&&((!expired(i)&&(i.type==="task"||(i.type==="project"&&nextDeadline(i))))||reportPending(i))).map(i=>({...i,taskDeadline:nextDeadline(i),taskTitle:expired(i)&&reportPending(i)?"Публикация / отчёт: "+i.title:i.title}));
-    if(taskFilter==="urgent") list=list.filter(i=>i.priority==="urgent");
-    if(taskFilter==="high") list=list.filter(i=>["urgent","high"].includes(i.priority));
-    if(taskFilter==="report") list=list.filter(i=>(i.deliverables||[]).length||i.publication||i.reportDeadline||(i.badges||[]).some(b=>/отч/i.test(b)));
-    if(taskFilter==="schools") list=list.filter(i=>(i.audience||[]).includes("schools"));
-    list.sort((a,b)=>(parseDate(a.taskDeadline)||new Date(2100,0))-(parseDate(b.taskDeadline)||new Date(2100,0)));
-    setSectionCount("now",list.length);
-
-    $("#taskList").innerHTML=list.map(i=>{
-      const d=parseDate(i.taskDeadline);
-      const report=((i.deliverables||[]).length||i.publication)?'<span class="compact-chip report">Есть отчётность</span>':"";
-      const aud=audienceText(i)?'<span class="compact-chip">'+esc(audienceText(i).replace("Кому: ",""))+'</span>':"";
-      return '<button class="task-card-compact '+(i.priority==="urgent"?"urgent":i.priority==="high"?"high":"")+'" data-open="'+i.id+'">'
-        +'<span class="compact-top"><span class="task-date"><b>'+(d?d.getDate():"—")+'</b><small>'+(d?monthShort[d.getMonth()]:"срок")+'</small></span><span class="compact-status">'+esc(deadlineLabel(i))+'</span></span>'
-        +'<span class="compact-category">'+esc(i.category)+'</span>'
-        +'<strong class="compact-title">'+esc(i.taskTitle)+'</strong>'
-        +'<span class="compact-summary">'+esc(i.short)+'</span>'
-        +'<span class="compact-meta">'+aud+report+'</span>'
-        +'<span class="compact-open">Открыть инструкцию →</span>'
-        +'</button>';
-    }).join("")||'<div class="empty">В этой категории пока ничего нет.</div>';
-    decorateCards("taskList");
-  }
-
-  function renderProjects(){
-    const filters=[["all","Все актуальные"],["action","Акции"],["project","Проекты"],["event","События"],["upcoming","Скоро"],["active","Идёт сейчас"]];
-    $("#projectFilters").innerHTML=filters.map(f=>'<button class="filter-btn '+(projectFilter===f[0]?"active":"")+'" data-project-filter="'+f[0]+'">'+f[1]+'</button>').join("");
-    let list=items.filter(i=>isPublic(i)&&!expired(i)&&["action","project","event"].includes(i.type));
-    if(["action","project","event"].includes(projectFilter)) list=list.filter(i=>i.type===projectFilter&&!expired(i));
-    if(projectFilter==="upcoming") list=list.filter(i=>!expired(i)&&(startsInFuture(i)||(!i.start&&["upcoming","soon"].includes(i.status))));
-    if(projectFilter==="active") list=list.filter(i=>!expired(i)&&isOngoing(i)&&!startsInFuture(i));
-    if(projectFilter==="past") list=list.filter(i=>expired(i));
-    list.sort((a,b)=>{
-      const aPast=Boolean(expired(a)),bPast=Boolean(expired(b));
-      if(aPast!==bPast) return Number(aPast)-Number(bPast);
-      if(aPast) return (endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start));
-      return (parseDate(a.start||a.deadline)||new Date(2100,0))-(parseDate(b.start||b.deadline)||new Date(2100,0));
+  function renderCurrent(){
+    const filters=[["all","Все"],["week","На 7 дней"],["action","Акции"],["project","Проекты"],["event","Мероприятия"],["tasks","Задания"],["schools","Для школ"]];
+    $("#currentFilters").innerHTML=filters.map(([id,title])=>'<button class="filter-btn '+(currentFilter===id?'active':'')+'" data-current-filter="'+id+'" aria-pressed="'+(currentFilter===id)+'">'+title+'</button>').join("");
+    const all=currentGroups();
+    const weekIds=new Set(calendarViewEntries().filter(e=>days(e.date)<=6).flatMap(e=>[e.item.id,e.stageOwner].filter(Boolean)));
+    const list=all.filter(({item,tasks})=>{
+      if(currentFilter==="week")return [item,...tasks].some(i=>weekIds.has(i.id));
+      if(currentFilter==="tasks")return tasks.length||item.type==="task"||reportPending(item)||stagesFor(item).some(stage=>["task","registration","report"].includes(stage.kind)&&(stage.end||stage.start||monthEnd(stage.monthEnd||stage.monthStart)||"")>=todayMoscow);
+      if(currentFilter==="schools")return [item,...tasks].some(i=>(i.audience||[]).includes("schools"));
+      return currentFilter==="all"||item.type===currentFilter;
     });
-    const icons={action:"✦",project:"◇",event:"◉",task:"✓"};
-    setSectionCount("projects",list.length);
-
-    $("#projectList").innerHTML=list.map(i=>{
-      const start=i.start?fmt(i.start):"";
-      const next=nextDeadline(i);
-      const secondary=next?"Ближайший срок: "+fmt(next):deadlineLabel(i);
-      const past=Boolean(expired(i));
-      const extra=past?"Завершено · материалы доступны":((i.formats||[]).length?i.formats.length+" формата участия":((i.steps||[]).length?i.steps.length+" шагов":""));
-      return '<button class="project-card-compact '+i.type+(past?" is-past":"")+'" data-open="'+i.id+'">'
-        +'<span class="project-kicker"><span class="project-icon">'+icons[i.type]+'</span><span class="project-dates">'+esc(start)+'<small>'+esc(secondary)+'</small></span></span>'
-        +'<span class="project-category">'+esc(i.category)+'</span>'
-        +'<strong class="project-compact-title">'+esc(i.title)+'</strong>'
-        +'<span class="project-compact-summary">'+esc(i.short)+'</span>'
-        +(extra?'<span class="project-compact-hint">'+esc(extra)+'</span>':"")
-        +'<span class="compact-open">Полная инструкция →</span>'
-        +'</button>';
-    }).join("")||'<div class="empty">Ничего не найдено.</div>';
-    decorateCards("projectList");
+    setSectionCount("now",all.length);
+    $("#currentResult").textContent="Показано карточек: "+list.length+" из "+all.length;
+    $("#currentList").innerHTML=list.map(({item:i,tasks,deadline})=>{
+      const reportOnly=expired(i)&&reportPending(i);
+      const title=reportOnly?"Публикация и отчёт: "+i.title:i.title;
+      const status=reportOnly?"Отчёт до "+fmtYear(i.reportDeadline):deadline?"Ближайший срок: "+fmtYear(deadline):i.eventDate?"Дата: "+fmtYear(i.eventDate):"Срок уточняется";
+      return '<article class="current-card"><button class="current-main" data-open="'+esc(i.id)+'"><span class="current-category">'+esc(typeLabel[i.type]||"Материал")+' · '+esc(i.category)+'</span><strong>'+esc(title)+'</strong><span class="current-summary">'+esc(i.short)+'</span><span class="current-deadline">'+esc(status)+'</span><span class="current-open">Открыть инструкцию</span></button>'+favoriteButton("item:"+i.id,i.title)
+        +(tasks.length?'<details class="current-tasks"'+(currentFilter==="tasks"?' open':'')+'><summary>Задания и регистрация <span>'+tasks.length+'</span></summary><div>'+tasks.sort((a,b)=>(nextDeadline(a)||"9999").localeCompare(nextDeadline(b)||"9999")).map(task=>'<button data-open="'+esc(task.id)+'"><strong>'+esc(task.title)+'</strong><small>'+esc(fmtYear(nextDeadline(task)))+(startsInFuture(task)?" · с "+fmtYear(task.start):"")+'</small></button>').join("")+'</div></details>':'')+'</article>';
+    }).join("")||'<div class="empty">По этому фильтру актуальных материалов нет. Завершённые мероприятия находятся в <a href="#archive">архиве</a>.</div>';
   }
 
   function renderCalendar(){
     const monthNom=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-    const allEvents=calendarEntries();
+    const allEvents=calendarViewEntries(showCalendarHistory);
     const monthSet=new Set([currentYm]);
-    allEvents.forEach(e=>{if(e.date.slice(0,7)>="2026-09")monthSet.add(e.date.slice(0,7))});
-    items.filter(isPublic).forEach(i=>stagesFor(i).forEach(stage=>{
+    allEvents.forEach(e=>{if(e.date.slice(0,7)>=(showCalendarHistory?"2026-09":currentYm))monthSet.add(e.date.slice(0,7))});
+    items.filter(i=>isPublic(i)&&(showCalendarHistory||!expired(i))).forEach(i=>stagesFor(i).forEach(stage=>{
       const from=(stage.start||stage.end||stage.monthStart||stage.monthEnd||"").slice(0,7);
       const to=(stage.end||stage.start||stage.monthEnd||stage.monthStart||"").slice(0,7);
       if(!from||!to)return;
       let [y,m]=from.split("-").map(Number);
       for(let n=0;n<60;n++){
         const key=y+"-"+String(m).padStart(2,"0");if(key>to)break;
-        if(key>="2026-09")monthSet.add(key);
+        if(key>=(showCalendarHistory?"2026-09":currentYm))monthSet.add(key);
         if(++m>12){m=1;y++}
       }
     }));
@@ -469,8 +440,8 @@
     $("#calendarAgenda").innerHTML=events.map(e=>{
       const date=parseDate(e.date);
       return '<button class="agenda-mobile-card" data-open="'+esc(e.item.id)+'"><span class="agenda-mobile-date calendar-'+e.kind+'"><b>'+date.getDate()+'</b><small>'+monthShort[date.getMonth()]+'</small></span><span class="agenda-mobile-copy"><small>'+esc(e.label)+(e.tentative?' · ориентировочно':'')+'</small><b>'+esc(e.title)+'</b><span>'+esc(e.item.category)+'</span></span></button>';
-    }).join("")||'<div class="empty">В этом месяце нет событий с точной датой.</div>';
-    const stages=stagesInMonth(calendarMonth);
+    }).join("")||'<div class="empty">В этом месяце нет предстоящих событий с точной датой. Для завершённых дат включите «Показать прошедшие даты».</div>';
+    const stages=calendarViewStages(calendarMonth,showCalendarHistory);
     $("#calendarStageCount").textContent=stages.length;
     $("#calendarStages").innerHTML=stages.map(({item,stage})=>'<button class="calendar-stage-row" data-open="'+esc(item.id)+'"><span><em class="calendar-stage-type">'+esc(calendarLabel(stage.title,stage.kind,{label:stage.label,type:item.type,stage:true}))+'</em><b>'+esc(stage.title)+'</b><small>'+esc(item.title)+'</small></span><span>'+esc(stagePeriod(stage))+'</span></button>').join("")||'<div class="empty">Этапы с установленными сроками на этот месяц не указаны.</div>';
   }
@@ -499,7 +470,7 @@
 
   function renderArchive(){
     const all=items.filter(i=>isPublic(i)&&expired(i)).sort((a,b)=>(endDate(b)||parseDate(b.start))-(endDate(a)||parseDate(a.start)));
-    const itemDates=i=>[i.start,i.deadline,i.eventDate,i.reportDeadline,i.calendarDisplayDate].filter(d=>parseDate(d));
+    const itemDates=i=>{const end=endDate(i);return end?[end.getFullYear()+"-"+String(end.getMonth()+1).padStart(2,"0")+"-"+String(end.getDate()).padStart(2,"0")]:[]};
     const months=[...new Set(all.flatMap(i=>itemDates(i).map(d=>d.slice(0,7))))].sort().reverse();
     const label=m=>parseDate(m+"-01").toLocaleDateString("ru-RU",{month:"long",year:"numeric"});
     const controls=$("#archiveFilters");
@@ -593,6 +564,12 @@
   function openModal(id){
     const i=items.find(x=>x.id===id); if(!i||!isPublic(i))return;
     let detail="";
+    const groups=currentGroups();
+    const group=groups.find(g=>g.item.id===i.id);
+    const owner=groups.find(g=>g.tasks.some(task=>task.id===i.id));
+    if(owner)detail+='<div class="related-owner"><button data-open="'+esc(owner.item.id)+'">К проекту: '+esc(owner.item.title)+'</button></div>';
+    if(group?.tasks.length)detail+='<section class="detail-section"><h3>Задания и регистрация</h3><div class="related-tasks">'+group.tasks.map(task=>'<button data-open="'+esc(task.id)+'"><strong>'+esc(task.title)+'</strong><span>'+esc(fmtYear(nextDeadline(task)))+'</span></button>').join("")+'</div></section>';
+
     if(stagesFor(i).length){
       detail+='<section class="detail-section"><details class="stage-timeline"><summary>Этапы и сроки конкурса ('+stagesFor(i).length+')</summary><ol>'+stagesFor(i).map(stage=>'<li><strong>'+esc(stage.title)+'</strong><span>'+esc(stagePeriod(stage))+'</span>'+(stage.note?'<small>'+esc(stage.note)+'</small>':"")+'</li>').join("")+'</ol></details></section>';
     }
@@ -631,8 +608,8 @@
     const overview='<section class="detail-overview"><div><span>Срок</span><strong>'+esc(deadlineLabel(i))+'</strong></div>'+(i.eventDate?'<div><span>Дата события</span><strong>'+esc(fmt(i.eventDate))+'</strong></div>':"")+(i.reportDeadline?'<div><span>Публикация / отчёт</span><strong>до '+esc(fmt(i.reportDeadline))+'</strong></div>':"")+(audience?'<div><span>Для кого</span><strong>'+esc(audience.replace("Кому: ",""))+'</strong></div>':"")+'</section>';
     const cal=calendarEventFor(i);
     const calendarActions=cal?'<section class="calendar-add"><div><span>Не пропустить дату</span><strong>Добавить в свой календарь</strong></div><div class="calendar-add-actions"><a href="'+safeUrl(googleCalendarUrl(i))+'" target="_blank" rel="noopener" class="google-calendar-btn">Google Calendar ↗</a><button type="button" data-apple-calendar="'+i.id+'" class="apple-calendar-btn">Apple Calendar / .ics ↓</button></div></section>':"";
-    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><div class="modal-save">'+favoriteButton("item:"+i.id,i.title)+'<span>Сохранить в избранном</span></div><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
-    lastFocused=document.activeElement;
+    $("#modalContent").innerHTML='<div class="modal-kicker"><span class="badge">'+esc(expired(i)?"Архив":typeLabel[i.type]||i.type)+'</span><span class="tag">'+esc(i.category)+'</span>'+badgeMarkup(i)+'</div><h2 id="modalTitle">'+esc(i.title)+'</h2><div class="modal-save">'+favoriteButton("item:"+i.id,i.title)+'<span>Сохранить в избранном</span></div><p class="modal-summary">'+esc(i.short)+'</p>'+overview+calendarActions+detail;
+    if($("#detailModal").hidden)lastFocused=document.activeElement;
     $("#searchPanel").hidden=true;
     $("#detailModal").hidden=false;
     document.body.style.overflow="hidden";
@@ -663,7 +640,7 @@
       ...(i.attachments||[]).map(x=>x.name)
     ].join(" ").toLowerCase().includes(q)).slice(0,7);
     const resDocs=(D.documents||[]).filter(d=>(d.url||(d.itemId&&items.some(i=>i.id===d.itemId&&isPublic(i))))&&[d.title,d.description,d.kind].join(" ").toLowerCase().includes(q)).slice(0,4);
-    const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
+    const itemHtml=resItems.map(i=>'<button class="search-result" data-open="'+i.id+'"><strong>'+esc(i.title)+'</strong><span>'+(expired(i)?"Архив · ":"Актуальное · ")+esc(i.category||typeLabel[i.type])+'</span></button>').join("");
     const docHtml=resDocs.map(d=>d.itemId
       ? '<button class="search-result" data-open="'+d.itemId+'"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></button>'
       : '<a class="search-result" href="'+safeUrl(d.url)+'" target="_blank" rel="noopener"><strong>'+esc(d.title)+'</strong><span>'+esc(d.kind)+'</span></a>').join("");
@@ -685,12 +662,11 @@
     }
     x=e.target.closest("[data-sections]");if(x){
       const open=x.dataset.sections==="expand";
-      [...sectionDisclosures(),$("#heroDeadlines")].filter(Boolean).forEach(el=>{el.open=open});rememberSections();return;
+      sectionDisclosures().forEach(el=>{el.open=open});rememberSections();return;
     }
     x=e.target.closest("[data-view]");if(x){preferences.view=x.dataset.view;savePreferences();applyView();return}
     x=e.target.closest("[data-open]"); if(x){openModal(x.dataset.open);return}
-    x=e.target.closest("[data-task-filter]"); if(x){taskFilter=x.dataset.taskFilter;renderTasks();return}
-    x=e.target.closest("[data-project-filter]"); if(x){projectFilter=x.dataset.projectFilter;renderProjects();return}
+    x=e.target.closest("[data-current-filter]");if(x){currentFilter=x.dataset.currentFilter;renderCurrent();return}
     x=e.target.closest("[data-archive-filter]");if(x){archiveFilter=x.dataset.archiveFilter;renderArchive();return}
     x=e.target.closest("[data-month]"); if(x){calendarMonth=x.dataset.month;renderCalendar();return}
     x=e.target.closest("[data-close-modal]"); if(x){closeModal();return}
@@ -701,6 +677,7 @@
     if(!e.target.closest(".search-panel")&&!e.target.closest(".search-wrap")){const panel=$("#searchPanel");if(panel)panel.hidden=true;}
   });
 
+  $("#calendarHistory").addEventListener("change",e=>{showCalendarHistory=e.target.checked;renderCalendar()});
   const searchInput=$("#globalSearch");
   if(searchInput) searchInput.oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
@@ -728,14 +705,12 @@
   run("settings",applySiteSettings);
   run("freshness",renderFreshness);
   run("hero",renderHero);
-  run("tasks",renderTasks);
+  run("current",renderCurrent);
   run("calendar",renderCalendar);
-  run("projects",renderProjects);
   run("docs",renderDocs);
   run("updates",renderUpdates);
   run("archive",renderArchive);
   run("favorites",renderFavorites);
-  run("week",renderWeek);
   run("sidebar",setupSidebar);
   run("deep-link",()=>{
     const deepLinkedCard=new URL(location.href).searchParams.get("card");

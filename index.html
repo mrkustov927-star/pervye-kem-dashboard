@@ -7,20 +7,20 @@
   <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
   <title>Первые · Кемский округ — рабочий кабинет</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=20261115-calendar-labels" />
+  <link rel="stylesheet" href="styles.css?v=20261122-audit" />
 </head>
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="#top" aria-label="Движение Первых · Кемский муниципальный округ">
-        <img class="brand-logo" src="pervye-logo-clean.png" alt="Первые" width="337" height="93" />
+        <img class="brand-logo" src="pervye-logo.svg" alt="Первые" width="212" height="90" />
         <span class="brand-context" id="districtLabel">Кемский муниципальный округ</span>
       </a>
       <nav class="header-links" aria-label="Навигация">
-        <a href="#now">Сейчас</a>
+        <a href="#now">Актуальное</a>
         <a href="#calendar">Календарь</a>
-        <a href="#projects">Акции и проекты</a>
         <a href="#docs">Документы</a>
+        <a href="#archive">Архив</a>
       </nav>
     </div>
   </header>
@@ -40,14 +40,12 @@
 
   <nav class="desktop-sidebar" aria-label="Разделы рабочего кабинета">
     <span class="sidebar-caption">Рабочий кабинет</span>
-    <a href="#week">На этой неделе <span data-nav-count="week"></span></a>
-    <a href="#favorites">Избранное <span data-nav-count="favorites"></span></a>
-    <a href="#now">Задачи <span data-nav-count="now"></span></a>
+    <a href="#now">Актуальное <span data-nav-count="now"></span></a>
     <a href="#calendar">Календарь <span data-nav-count="calendar"></span></a>
-    <a href="#projects">Акции и проекты <span data-nav-count="projects"></span></a>
     <a href="#docs">Документы <span data-nav-count="docs"></span></a>
-    <a href="#updates">Обновления</a>
+    <a href="#favorites">Избранное <span data-nav-count="favorites"></span></a>
     <a href="#archive">Архив <span data-nav-count="archive"></span></a>
+    <a href="#updates">Обновления</a>
     <a class="sidebar-top" href="#top">Наверх ↑</a>
   </nav>
 
@@ -66,22 +64,16 @@
           </div>
 
           <div class="hero-actions">
-            <a class="primary-action" id="heroPrimary" href="#now">Что сделать сейчас</a>
+            <a class="primary-action" id="heroPrimary" href="#now">Открыть актуальное</a>
             <a class="secondary-action" id="heroSecondary" href="#calendar">Открыть календарь</a>
           </div>
         </div>
 
-        <details class="hero-visual" id="heroDeadlines" open>
-          <summary class="hero-visual-head">
-            <span class="pulse" aria-hidden="true"></span>
-            <b>Ближайшие дедлайны</b>
-            <span class="section-chevron" aria-hidden="true"></span>
-          </summary>
-          <div class="hero-deadlines-body">
-          <div class="hero-mini-list" id="heroMiniList"></div>
-          <p>Откройте нужную карточку — внутри полный порядок действий, отчётность и ссылки.</p>
-          </div>
-        </details>
+        <aside class="hero-overview" aria-label="Обзор кабинета">
+          <h2>Рабочий кабинет</h2>
+          <p>Выберите материал в «Актуальном». Все сроки и этапы собраны в календаре, завершённые мероприятия — в архиве.</p>
+          <div id="heroOverview" class="overview-links"></div>
+        </aside>
       </div>
     </section>
 
@@ -99,44 +91,20 @@
 
     <p class="mobile-section-hint wrap">Выберите раздел — нажмите, чтобы раскрыть материалы.</p>
 
-    <section class="week-section" id="week" aria-labelledby="week-title">
+    <section class="current-section" id="now" aria-labelledby="now-title">
       <div class="wrap">
         <details class="section-disclosure" data-section-disclosure open>
           <summary class="section-summary">
-            <span class="section-number blue" aria-hidden="true">01</span>
-            <h2 class="section-label"><span id="week-title">На этой неделе</span><small id="weekRange">Ближайшие 7 дней</small></h2>
-            <span class="section-count" data-section-count="week"></span><span class="section-chevron" aria-hidden="true"></span>
-          </summary>
-          <div class="section-body"><div class="week-list" id="weekList"></div></div>
-        </details>
-      </div>
-    </section>
-
-    <section class="favorites-section" id="favorites" aria-labelledby="favorites-title">
-      <div class="wrap">
-        <details class="section-disclosure" data-section-disclosure>
-          <summary class="section-summary">
-            <span class="section-number red" aria-hidden="true">02</span>
-            <h2 class="section-label"><span id="favorites-title">Избранное</span><small>Ваши сохранённые карточки и документы</small></h2>
-            <span class="section-count" data-section-count="favorites"></span><span class="section-chevron" aria-hidden="true"></span>
-          </summary>
-          <div class="section-body"><p class="favorites-hint">Нажмите звёздочку у материала. Избранное сохраняется в этом браузере.</p><div class="favorites-grid" id="favoritesList"></div></div>
-        </details>
-      </div>
-    </section>
-
-    <section class="now-section" id="now" aria-labelledby="now-title">
-      <div class="wrap">
-        <details class="section-disclosure light" data-section-disclosure open>
-          <summary class="section-summary">
-            <span class="section-number red" aria-hidden="true">03</span>
-            <h2 class="section-label"><span id="now-title">Что требует внимания</span><small id="nowSubtitle">Ближайшие задачи и дедлайны</small></h2>
+            <span class="section-number red" aria-hidden="true">01</span>
+            <h2 class="section-label"><span id="now-title">Актуальное</span><small id="nowSubtitle">Акции, проекты и задания</small></h2>
             <span class="section-count" data-section-count="now"></span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
-        <div class="filters dark-filters" id="taskFilters"></div>
-        <div class="now-grid" id="taskList"></div>
+        <p class="section-help">Одна карточка на проект или акцию. Задания и регистрация находятся внутри неё. Завершённые материалы — в <a href="#archive">архиве</a>.</p>
+        <div class="filters" id="currentFilters" aria-label="Фильтр актуальных материалов"></div>
+        <p id="currentResult" class="section-help" role="status" aria-live="polite"></p>
+        <div class="current-grid" id="currentList"></div>
           </div>
         </details>
       </div>
@@ -146,14 +114,14 @@
       <div class="wrap">
         <details class="section-disclosure" data-section-disclosure open>
           <summary class="section-summary">
-            <span class="section-number blue" aria-hidden="true">04</span>
-            <h2 class="section-label"><span id="calendar-title">Календарь Первых</span><small id="calendarSubtitle">Сентябрь — ноябрь 2026</small></h2>
+            <span class="section-number blue" aria-hidden="true">02</span>
+            <h2 class="section-label"><span id="calendar-title">Календарь</span><small id="calendarSubtitle">Сентябрь — ноябрь 2026</small></h2>
             <span class="section-count" data-section-count="calendar"></span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
           <div class="section-body">
         <div class="calendar-toolbar">
-          <span>Нажмите на событие — откроется полная инструкция.</span>
+          <span>Нажмите на дату или этап, чтобы открыть инструкцию. Прошедшие даты доступны по переключателю.</span>
           <div class="calendar-legend">
             <span><i class="legend-dot concept"></i> Акции и проекты</span>
             <span><i class="legend-dot task"></i> Задания</span>
@@ -162,33 +130,16 @@
             <span><i class="legend-dot report"></i> Публикации и отчёты</span>
           </div>
         </div>
+        <label class="calendar-history"><input type="checkbox" id="calendarHistory" /> Показать прошедшие даты</label>
         <div class="month-switch" id="calendarMonths"></div>
         <div class="calendar-shell">
           <div class="calendar-grid" id="calendarGrid"></div>
         </div>
         <div class="mobile-agenda" id="calendarAgenda"></div>
-        <details class="calendar-stages" open>
+        <details class="calendar-stages">
           <summary>Этапы конкурсов в выбранном месяце <span id="calendarStageCount"></span></summary>
           <div id="calendarStages"></div>
         </details>
-          </div>
-        </details>
-      </div>
-    </section>
-
-    <section class="projects-section" id="projects" aria-labelledby="projects-title">
-      <div class="wrap">
-        <details class="section-disclosure" data-section-disclosure open>
-          <summary class="section-summary">
-            <span class="section-number red" aria-hidden="true">05</span>
-            <h2 class="section-label"><span id="projects-title">Акции и проекты</span><small id="projectsSubtitle">Текущие и предстоящие акции, события и проекты</small></h2>
-            <span class="section-count" data-section-count="projects"></span>
-            <span class="section-chevron" aria-hidden="true"></span>
-          </summary>
-          <div class="section-body">
-        <p class="section-help">Завершённые события и материалы доступны в <a href="#archive">архиве мероприятий ↓</a>.</p>
-        <div class="filters" id="projectFilters"></div>
-        <div class="project-grid" id="projectList"></div>
           </div>
         </details>
       </div>
@@ -198,8 +149,8 @@
       <div class="wrap">
         <details class="section-disclosure" data-section-disclosure open>
           <summary class="section-summary">
-            <span class="section-number blue" aria-hidden="true">06</span>
-            <h2 class="section-label"><span id="docs-title">Ссылки и документы</span><small id="docsSubtitle">Всё, что нужно открыть повторно</small></h2>
+            <span class="section-number blue" aria-hidden="true">03</span>
+            <h2 class="section-label"><span id="docs-title">Документы</span><small id="docsSubtitle">Всё, что нужно открыть повторно</small></h2>
             <span class="section-count" data-section-count="docs"></span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
@@ -210,12 +161,34 @@
       </div>
     </section>
 
+    <section class="favorites-section" id="favorites" aria-labelledby="favorites-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure>
+          <summary class="section-summary">
+            <span class="section-number red" aria-hidden="true">04</span>
+            <h2 class="section-label"><span id="favorites-title">Избранное</span><small>Ваши сохранённые карточки и документы</small></h2>
+            <span class="section-count" data-section-count="favorites"></span><span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body"><p class="favorites-hint">Нажмите звёздочку у материала. Избранное сохраняется в этом браузере.</p><div class="favorites-grid" id="favoritesList"></div></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="archive-section" id="archive" aria-labelledby="archiveTitle">
+      <div class="wrap">
+        <details class="archive-box section-disclosure" data-section-disclosure>
+          <summary class="section-summary"><span class="section-number blue" aria-hidden="true">05</span><h2 class="section-label"><span id="archiveTitle">Архив</span><small id="archiveSubtitle">Карточки и материалы завершённых событий</small></h2><span class="section-count" data-section-count="archive"></span><span class="section-chevron" aria-hidden="true"></span></summary>
+          <div class="archive-tools"><p>Завершённые мероприятия, акции и задания. Выберите месяц, чтобы найти нужные материалы.</p><div class="filters" id="archiveFilters" aria-label="Месяц завершения"></div></div>
+          <div class="archive-grid" id="archiveList"></div>
+        </details>
+      </div>
+    </section>
     <section class="updates-section" id="updates" aria-labelledby="updates-title">
       <div class="wrap">
         <details class="section-disclosure" data-section-disclosure open>
           <summary class="section-summary">
-            <span class="section-number blue" aria-hidden="true">07</span>
-            <h2 class="section-label"><span id="updates-title">Что изменилось</span><small>Последние уточнения на сайте</small></h2>
+            <span class="section-number blue" aria-hidden="true">06</span>
+            <h2 class="section-label"><span id="updates-title">Обновления</span><small>Последние уточнения на сайте</small></h2>
             <span class="section-count" data-section-count="updates"></span>
             <span class="section-chevron" aria-hidden="true"></span>
           </summary>
@@ -226,22 +199,13 @@
       </div>
     </section>
 
-    <section class="archive-section" id="archive">
-      <div class="wrap">
-        <details class="archive-box section-disclosure" data-section-disclosure>
-          <summary class="section-summary"><span class="section-number blue" aria-hidden="true">08</span><h2 class="section-label"><span id="archiveTitle">Архив мероприятий</span><small id="archiveSubtitle">Карточки и материалы завершённых событий</small></h2><span class="section-count" data-section-count="archive"></span><span class="section-chevron" aria-hidden="true"></span></summary>
-          <div class="archive-tools"><p>Завершённые мероприятия, акции и задания. Выберите месяц, чтобы найти нужные материалы.</p><div class="filters" id="archiveFilters" aria-label="Месяц завершённых мероприятий"></div></div>
-          <div class="archive-grid" id="archiveList"></div>
-        </details>
-      </div>
-    </section>
   </main>
 
   <nav class="mobile-nav" aria-label="Быстрая навигация">
-    <a href="#now">Сейчас</a>
+    <a href="#now">Актуальное</a>
     <a href="#calendar">Календарь</a>
-    <a href="#projects">Проекты</a>
-    <a href="#docs">Ссылки</a>
+    <a href="#docs">Документы</a>
+    <a href="#archive">Архив</a>
   </nav>
 
   <footer class="footer">
@@ -262,8 +226,8 @@
   <div class="search-panel" id="searchPanel" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115-calendar-labels"></script>
-  <script src="app.js?v=20261115-calendar-labels"></script>
+  <script src="data.js?v=20261122-audit"></script>
+  <script src="app.js?v=20261122-audit"></script>
 </body>
 </html>
 

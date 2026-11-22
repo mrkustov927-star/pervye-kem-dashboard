@@ -33,15 +33,13 @@
     announcementText:"Приглашаем присоединиться к добровольческим активностям ноября. Ссылка на вакансии на Добро.рф будет добавлена после открытия набора.",
     announcementUrl:"",
     announcementButton:"Подать заявку",
-    nowTitle:"Что требует внимания",
-    nowSubtitle:"Ближайшие задачи и дедлайны",
-    calendarTitle:"Календарь Первых",
-    calendarSubtitle:"Сентябрь — ноябрь 2026",
-    projectsTitle:"Акции и проекты",
-    projectsSubtitle:"Текущие и прошедшие акции, события и проекты",
-    docsTitle:"Ссылки и документы",
+    nowTitle:"Актуальное",
+    nowSubtitle:"Акции, проекты и задания",
+    calendarTitle:"Календарь",
+    calendarSubtitle:"",
+    docsTitle:"Документы",
     docsSubtitle:"Всё, что нужно открыть повторно",
-    archiveTitle:"Прошедшие задания и мероприятия (сентябрь — октябрь)",
+    archiveTitle:"Архив",
     footerSubtitle:"Рабочий информационный кабинет первичных организаций"
   };
   let siteSettings={...defaultSiteSettings,...((D.meta&&D.meta.site)||{})};
@@ -556,8 +554,7 @@
       '<section class="preview-section"><h3>Разделы</h3>'+
       '<p><strong>01 · '+esc(s.nowTitle)+'</strong><br>'+esc(s.nowSubtitle)+'</p>'+
       '<p><strong>02 · '+esc(s.calendarTitle)+'</strong><br>'+esc(s.calendarSubtitle)+'</p>'+
-      '<p><strong>03 · '+esc(s.projectsTitle)+'</strong><br>'+esc(s.projectsSubtitle)+'</p>'+
-      '<p><strong>04 · '+esc(s.docsTitle)+'</strong><br>'+esc(s.docsSubtitle)+'</p></section>'
+      '<p><strong>03 · '+esc(s.docsTitle)+'</strong><br>'+esc(s.docsSubtitle)+'</p></section>'
     );
   }
 
