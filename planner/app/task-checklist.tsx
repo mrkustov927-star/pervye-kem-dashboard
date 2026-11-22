@@ -1,5 +1,5 @@
 'use client';
-import {useRef,useState} from 'react';
+import {useId,useRef,useState} from 'react';
 import {Check,Download,FileText} from 'lucide-react';
 import type {Task,Template,Variant} from './model';
 import {checklistFor,checkpointKey,isCheckpointDone} from './checklists';
@@ -18,15 +18,16 @@ function downloadChecklist(content:HTMLElement,title:string){
   copy.querySelectorAll('[data-screen-only],button,svg').forEach(el=>el.remove());
   copy.querySelectorAll('[hidden]').forEach(el=>el.removeAttribute('hidden'));
   copy.querySelectorAll('details').forEach(el=>el.open=true);
-  copy.querySelectorAll('input').forEach(el=>{el.checked=false;el.removeAttribute('checked')});
+  copy.querySelectorAll('input').forEach(el=>{el.disabled=false;el.checked=false;el.removeAttribute('checked')});
   copy.querySelectorAll('.checked').forEach(el=>el.classList.remove('checked'));
   doc.body.append(copy);
   const url=URL.createObjectURL(new Blob(['<!doctype html>',doc.documentElement.outerHTML],{type:'text/html;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download=title.replace(/[<>:"/\\|?*]/g,' ') + '.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-export function TaskChecklist({task,template,variant,leagueName,patch,openReports}:{task:Task;template:Template;variant:Variant;leagueName:string;patch:(value:Partial<Task>)=>void;openReports:()=>void}){
+export function TaskChecklist({task,template,variant,leagueName,patch,openReports,readOnly=false}:{task:Task;template:Template;variant:Variant;leagueName:string;patch:(value:Partial<Task>)=>void;openReports?:()=>void;readOnly?:boolean}){
   const data=checklistFor(template,variant),[remaining,setRemaining]=useState(false),content=useRef<HTMLDivElement>(null);
+  const prefix=useId();
   const all=data.sections.flatMap(s=>s.items);
   const done=(item:ChecklistItem)=>isCheckpointDone(task,variant.id,item);
   function toggle(item:ChecklistItem,checked:boolean){
@@ -47,10 +48,10 @@ export function TaskChecklist({task,template,variant,leagueName,patch,openReport
     </section>
     <div className="checklist-overview"><div><h3>Чек-лист команды</h3><p data-screen-only>Отмечено {all.filter(done).length} из {all.length}. Отметки помогают следить за подготовкой.</p></div><button data-screen-only type="button" className="button secondary" aria-pressed={remaining} onClick={()=>setRemaining(!remaining)}>{remaining?'Показать всё':'Только оставшиеся'}</button></div>
     <div className="checklist-sections">{data.sections.map(section=><details className="checklist-section" key={section.id} open={section===data.sections[0]}><summary><span>{section.title}</span><small>{section.items.filter(done).length} / {section.items.length}</small></summary>
-      <div>{section.items.map(item=>{const id='checkpoint-'+template.key+'-'+variant.id+'-'+item.id;
-        return <div hidden={remaining&&done(item)} className={'checklist-item '+(done(item)?'checked':'')} key={item.id}><input type="checkbox" id={id} checked={done(item)} onChange={e=>toggle(item,e.target.checked)}/><div><label htmlFor={id}>{item.label}</label><p>{item.detail}</p><p className="checkpoint-evidence"><span><b>Чем подтвердить</b> · {item.evidence}</span></p></div></div>})}
+      <div>{section.items.map(item=>{const id=prefix+'-checkpoint-'+template.key+'-'+variant.id+'-'+item.id;
+        return <div hidden={remaining&&done(item)} className={'checklist-item '+(done(item)?'checked':'')} key={item.id}><input type="checkbox" id={id} checked={done(item)} disabled={readOnly} onChange={e=>toggle(item,e.target.checked)}/><div><label htmlFor={id}>{item.label}</label><p>{item.detail}</p><p className="checkpoint-evidence"><span><b>Чем подтвердить</b> · {item.evidence}</span></p></div></div>})}
         {remaining&&section.items.every(done)&&<div data-screen-only className="checklist-finished"><Check size={16}/>В этом разделе всё отмечено</div>}
-        {section.id==='submission'&&<button type="button" className="button secondary" onClick={openReports}><FileText size={16}/>Заполнить поля отчёта</button>}
+        {section.id==='submission'&&openReports&&<button type="button" className="button secondary" onClick={openReports}><FileText size={16}/>Заполнить поля отчёта</button>}
       </div></details>)}</div>
     {data.pitfalls.length>0&&<details className="checklist-pitfalls"><summary>Перед отправкой проверьте</summary><ul>{data.pitfalls.map(t=><li key={t}>{t}</li>)}</ul></details>}
     <p className="checklist-source-note">Порядок выполнения заданий Общего зачёта · страницы {data.sourcePages.join(', ')}.</p>

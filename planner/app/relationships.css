@@ -39,3 +39,12 @@
 .map-variant-options strong{display:block;font-size:14px;overflow-wrap:anywhere}
 .map-variants p{margin:8px 0 0}.map-variant-preview{margin-top:12px}.map-variant-preview details,.map-variant-preview button{margin-top:10px}
 @media(max-width:650px){.map-variant-options{grid-template-columns:1fr}}
+
+.task-lookup{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(130px,.65fr);gap:12px;margin:12px 0}
+.task-lookup label{min-width:0;font-weight:650;display:grid;gap:5px}
+.task-lookup select,.task-lookup input{width:100%;min-width:0}
+.route-overview>summary{cursor:pointer;color:var(--navy);font-weight:650;padding:6px 0}
+.task-matches{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.route-stop .full-checklist{margin-top:18px}.route-stop .checklist-item label{font-weight:650}
+@media(max-width:850px){.task-lookup{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.task-lookup label:first-child{grid-column:1/-1}}
+.task-matches .button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere}

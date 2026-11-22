@@ -1,37 +1,48 @@
 'use client';
 import {useRef,useState} from 'react';
-import {Ban, CalendarDays, Check, FileText, Link2, Plus} from 'lucide-react';
+import {Ban, CalendarDays, FileText, Link2, Plus} from 'lucide-react';
 import type {ViewProps} from './planner';
-import {forTeam, getTask, leagues, statuses, variant, variantFields, ref, type Variant} from './model';
+import {forTeam, getTask, leagues, statuses, variant, variantFields, ref, type Task, type Template, type Variant} from './model';
 import {taskRelations, type TaskRelation} from './relations';
+import {TaskChecklist} from './task-checklist';
 
 const labels: Record<TaskRelation['kind'], string> = {
  required: 'Требование Порядка', optional: 'Возможность для команды', excluded: 'Ограничение выбора партнёра',
  before: 'По плану команды · сначала', after: 'По плану команды · затем', event: 'Событие команды',
 };
 
-function VariantPicker({variants,current,automatic,readOnly,hasProgress,onSave}:{
- variants:Variant[];current:Variant;automatic:boolean;readOnly:boolean;hasProgress:boolean;onSave:(v:Variant)=>void
-}) {
+function SelectedTask({p,task,state,current,readOnly}:{p:ViewProps;task:Template;state:Task;current:Variant;readOnly:boolean}) {
+ const {team}=p;
  const [candidate,setCandidate]=useState(current.id);
- const shown=variants.find(v=>v.id===candidate)??current;
+ const shown=task.variants.find(v=>v.id===candidate)??current;
  const preview=shown.id!==current.id;
- return <fieldset className="map-variants"><legend>{automatic?'Вариант по статусу шефства':'Варианты задания'}</legend>
-  <div className="map-variant-options">{variants.map((v,i)=><label key={v.id}>
-   <input type="radio" name="map-variant" checked={shown.id===v.id} onChange={()=>setCandidate(v.id)}/>
-   <span><small>Вариант {i+1}{v.id===current.id?' · в плане команды':''}</small><strong>{v.title}</strong></span>
-  </label>)}</div>
-  {automatic&&<p>Без шефа команда выполняет вариант 1, с шефом — вариант 2.</p>}
-  {preview&&<div className="map-variant-preview" aria-live="polite"><h3>{shown.title}</h3><p>{shown.specific}</p>
-   <details><summary>Шаги и материалы для отчёта</summary><ol>{shown.steps.map((step,i)=><li key={i}>{step}</li>)}</ol>
-    <strong>Что подготовить к сдаче</strong><ul>{shown.reports.map(r=><li key={r.key}>{r.label}</li>)}</ul></details>
-   {automatic||readOnly?<p>{automatic?'Вы просматриваете условия другого варианта.':'Режим просмотра. Сохранить выбор команды можно по ссылке для редактирования.'}</p>:
-    <>{hasProgress&&<p>При смене варианта будут сброшены его этапы, показатели и материалы отчёта.</p>}<button className="button primary" onClick={()=>onSave(shown)}>Выбрать для плана команды</button></>}
-  </div>}
- </fieldset>;
+ const automatic=task.key==='lo-10';
+ const patch=(fields:Partial<Task>)=>p.update(next=>{
+  const key=ref(team.id,task.key);
+  next.tasks[key]={...getTask(next,team,task),...fields};
+ });
+ return <>
+  <div className="route-stop-head"><div><p className="eyebrow">Задание № {task.number} · до {task.points} баллов · {statuses[state.status]}</p>
+   <h2>{shown.title}</h2></div>
+   {!preview&&<button type="button" className="button secondary" onClick={()=>p.openTask(task.key,'plan')}><FileText size={16}/>План и сроки</button>}
+  </div>
+  {task.variants.length>1&&<fieldset className="map-variants"><legend>Варианты задания</legend>
+   <div className="map-variant-options">{task.variants.map((v,i)=><label key={v.id}>
+    <input type="radio" name="map-variant" checked={shown.id===v.id} onChange={()=>setCandidate(v.id)}/>
+    <span><small>Вариант {i+1}{v.id===current.id?' · в плане команды':''}</small><strong>{v.title}</strong></span>
+   </label>)}</div>
+   {automatic&&<p>Без шефа команда выполняет вариант 1, с шефом — вариант 2.</p>}
+   {preview&&<div className="map-variant-preview"><p>Вы просматриваете чек-лист другого варианта.</p>
+    {!automatic&&!readOnly&&<>{!!(state.steps.length||Object.keys(state.reports).length||Object.keys(state.metrics).length)&&<p>При смене варианта сбросятся его этапы, показатели и материалы отчёта.</p>}
+     <button type="button" className="button primary" onClick={()=>patch(variantFields(shown))}>Выбрать для плана команды</button></>}
+   </div>}
+  </fieldset>}
+  <TaskChecklist key={shown.id} leagueName={leagues[team.league]} task={preview?{...state,reports:{}}:state} template={task} variant={shown}
+   readOnly={readOnly||preview} patch={patch} openReports={preview||readOnly?undefined:()=>p.openTask(task.key,'reports')}/>
+ </>;
 }
 
-export function MapView(p: ViewProps & {readOnly?: boolean}) {
+export function MapView(p: ViewProps) {
  const {plan, team, readOnly} = p;
  const list = forTeam(team);
  const task = list.find(item => item.key === p.selected) ?? list[0];
@@ -40,11 +51,15 @@ export function MapView(p: ViewProps & {readOnly?: boolean}) {
  const groups = taskRelations(plan, team, task);
  const contest = groups.filter(g => ['required','optional','excluded'].includes(g.kind));
  const own = groups.filter(g => ['before','after','event'].includes(g.kind));
+ const [query,setQuery]=useState('');
+ const [statusFilter,setStatusFilter]=useState('');
  const stopPanel = useRef<HTMLElement>(null);
  const stops = list.map(item => {
   const progress = getTask(plan,team,item);
   return {item,title:variant(item,progress,team).title,status:progress.status};
  });
+ const matches=stops.filter(({item,status})=>(!statusFilter||statusFilter===status)&&
+  [String(item.number),item.title,...item.variants.map(option=>option.title),getTask(plan,team,item).owner].join(' ').toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')));
  function selectStop(key:string) {
   p.selectTask(key);
   if(window.matchMedia('(max-width:850px)').matches){
@@ -70,8 +85,17 @@ export function MapView(p: ViewProps & {readOnly?: boolean}) {
  }
  return <div className="route-view">
   <section className="panel route-board" aria-label="Маршрут по статусам">
-   <h2>Где сейчас задания команды</h2>
-   <p>Нажмите на номер, чтобы увидеть выбранный вариант и связи задания.</p>
+   <h2>Выбор задания</h2>
+   <div className="task-lookup">
+    <label>Задание<select aria-label="Задание" value={matches.some(({item})=>item.key===task.key)?task.key:''} onChange={e=>selectStop(e.target.value)}>
+     <option value="" disabled>{matches.length?'Выберите из списка':'Задания не найдены'}</option>
+     {matches.map(({item})=><option key={item.key} value={item.key}>№ {item.number}. {item.variants.map(option=>option.title).join(' / ')}</option>)}
+    </select></label>
+    <label>Поиск<input type="search" placeholder="Название, номер, ответственный" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+    <label>Статус<select aria-label="Фильтр по статусу" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="">Все статусы</option>{Object.entries(statuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+   </div>
+   {(query||statusFilter)&&<div className="task-matches" aria-live="polite">{matches.length?matches.map(({item,title})=><button type="button" className="button secondary" key={item.key} onClick={()=>selectStop(item.key)}>№ {item.number}. {item.variants.length>1?item.title:title}</button>):<p>По этим условиям заданий нет.</p>}</div>}
+   <details className="route-overview"><summary>Маршрут команды по статусам</summary>
    <ol className="route-stages">{Object.entries(statuses).map(([status,label])=>{
     const entries=stops.filter(stop=>stop.status===status);
     return <li key={status} className={'route-stage route-'+status}>
@@ -81,14 +105,10 @@ export function MapView(p: ViewProps & {readOnly?: boolean}) {
        aria-controls="route-stop" aria-label={'Задание № '+item.number+'. '+title} title={title}
        aria-pressed={item.key===task.key} onClick={()=>selectStop(item.key)}>{item.number}</button>)}</div>
     </li>;
-   })}</ol>
+   })}</ol></details>
   </section>
-  <section id="route-stop" className="panel route-stop" ref={stopPanel} tabIndex={-1} aria-label="Остановка маршрута">
-   <div className="route-stop-head"><div><p className="eyebrow">Задание № {task.number} · {statuses[state.status]}</p><h2>{v.title}</h2></div>
-    <button type="button" className="button secondary" onClick={()=>p.openTask(task.key,'checklist')}><FileText size={16}/>Открыть в «Заданиях»</button></div>
-   {task.variants.length>1&&<VariantPicker key={team.id+'/'+task.key+'/'+v.id} variants={task.variants} current={v}
-    automatic={task.key==='lo-10'} readOnly={!!readOnly} hasProgress={!!(state.steps.length||Object.keys(state.reports).length||Object.keys(state.metrics).length)}
-    onSave={choice=>p.update(next=>{const key=ref(team.id,task.key);next.tasks[key]={...getTask(next,team,task),...variantFields(choice)}})}/>}
+  <section id="route-stop" className="panel route-stop" ref={stopPanel} tabIndex={-1} aria-label="Выбранное задание">
+   <SelectedTask key={team.id+'/'+task.key+'/'+v.id} p={p} task={task} state={state} current={v} readOnly={!!readOnly}/>
    {(task.number===2||contest.length>0)&&<section className="map-block"><h3>Что учесть по Порядку</h3>
     {task.number===2&&<p>В бортовой журнал входят события Календаря Первых, всероссийские акции Дней единых действий и собственные мероприятия первички. Каждое событие учитывается один раз. Мероприятия по другим конкурсным заданиям в журнал не включаются.</p>}
     {contest.map(relation)}
