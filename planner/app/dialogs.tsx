@@ -30,4 +30,70 @@ return <Modal close={close} wide><Head eyebrow="РЕЕСТР СОБЫТИЙ" tit
 <div className="form-grid"><label>Число участников<input type="number" min="0" step="1" value={e.participants} onChange={x=>patch({participants:Math.max(0,Number(x.target.value))})}/></label><label>Дата итогового поста<input type="date" min={START} max={END} value={e.publication} onChange={x=>patch({publication:x.target.value})}/></label></div><label>Прямая ссылка на итоговый пост<input value={e.url} placeholder="https://…" onChange={x=>patch({url:x.target.value})}/></label><label>Результат и категории участников<textarea value={e.result} placeholder="Что изменилось, кому помогли, кто участвовал помимо конкурсной команды" onChange={x=>patch({result:x.target.value})}/></label>
 {(e.date||attempt||e.taskRefs.length>0||e.journalTeams.length>0)&&errors.length>0&&<div className="event-problems">{errors.map((x,i)=><div className={'issue '+x.level} key={i}><b>{x.title}</b><span>{x.detail}</span></div>)}</div>}</div><div className="modal-footer">{value&&<button className="button subtle danger-text" onClick={()=>{update(n=>{n.events=n.events.filter(x=>x.id!==e.id)});close()}}><Trash2 size={17}/>Удалить</button>}<button className="button secondary" onClick={close}>Отмена</button><button className="button primary" onClick={()=>{setAttempt(true);if(hard.length||!e.teamIds.length)return;update(n=>{const i=n.events.findIndex(x=>x.id===e.id);if(i<0)n.events.push(e);else n.events[i]=e});close()}}><Check size={17}/>{e.held?'Сохранить событие':'Сохранить план'}</button></div></Modal>
 }
-export function TeamDialog(p:ViewProps&{value?:Team;close:()=>void}){const {plan,value,close,update}=p;const [t,set]=useState<Team>(value?structuredClone(value):{id:uid(),name:'',league:'lv',mentorId:'',capacity:3,firstGraders:false});return <Modal close={close}><Head eyebrow="ПЕРВИЧНОЕ ОТДЕЛЕНИЕ" title={value?'Настройки команды':'Добавить команду'} close={close}/><div className="modal-body form-stack"><label>Название первички<input autoFocus value={t.name} onChange={e=>set({...t,name:e.target.value})} placeholder="Название вашей команды"/></label><label>Лига<select value={t.league} onChange={e=>set({...t,league:e.target.value as League,mentorId:''})}>{Object.entries(leagues).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label><div className="note"><Info size={17}/>{t.league==='lo'?'Неучётные первички: учреждения культуры, спорта, допобразования и другие организации по Положению.':t.league==='pl'?'Участники, предусмотренные Положением из числа победителей и Первой лиги предыдущего сезона.':'Учётные первички образовательных организаций, не относящиеся к Первой лиге.'}</div>{t.league==='lo'&&<label>Команда-шеф<select value={t.mentorId} onChange={e=>set({...t,mentorId:e.target.value})}><option value="">Без шефа</option>{plan.teams.filter(x=>x.league==='pl'&&x.id!==t.id).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>}<label>Ваш ориентир нагрузки в неделю<input type="number" min="1" max="12" value={t.capacity} onChange={e=>set({...t,capacity:Math.max(1,Math.min(12,Number(e.target.value)||1))})}/></label><p className="note">Считаются события и контрольные точки. Это ваш ориентир, не норматив конкурса.</p><label className="check-row"><input type="checkbox" checked={t.firstGraders} onChange={e=>set({...t,firstGraders:e.target.checked})}/>В команде или аудитории есть первоклассники</label></div><div className="modal-footer">{value&&plan.teams.length>1&&<button className="button subtle danger-text" onClick={()=>{update(n=>{n.teams=n.teams.filter(x=>x.id!==t.id).map(x=>x.mentorId===t.id?{...x,mentorId:''}:x);Object.keys(n.tasks).filter(k=>k.startsWith(t.id+'/')).forEach(k=>delete n.tasks[k]);n.events=n.events.map(e=>({...e,teamIds:e.teamIds.filter(id=>id!==t.id),journalTeams:e.journalTeams.filter(id=>id!==t.id),taskRefs:e.taskRefs.filter(r=>!r.startsWith(t.id+'/'))})).filter(e=>e.teamIds.length)});p.selectTeam(plan.teams.find(x=>x.id!==t.id)!.id);close()}}><Trash2 size={16}/>Удалить</button>}<button className="button secondary" onClick={close}>Отмена</button><button disabled={!t.name.trim()} className="button primary" onClick={()=>{update(n=>{const i=n.teams.findIndex(x=>x.id===t.id);if(i<0)n.teams.push(t);else n.teams[i]=t;if(t.league!=='pl')n.teams=n.teams.map(x=>x.mentorId===t.id?{...x,mentorId:''}:x)});p.selectTeam(t.id);close()}}>Сохранить команду</button></div></Modal>}
+export function TeamDialog(p:ViewProps&{value?:Team;close:()=>void}){
+ const {plan,value,close,update}=p;
+ const [t,set]=useState<Team>(value?structuredClone(value):{id:uid(),name:'',league:'lv',mentorId:'',capacity:3,firstGraders:false});
+ const [wardIds,setWardIds]=useState<string[]>(()=>value?.league==='pl'?plan.teams.filter(x=>x.league==='lo'&&x.mentorId===value.id).map(x=>x.id):[]);
+ const mentors=plan.teams.filter(x=>x.league==='pl'&&x.id!==t.id);
+ const wards=plan.teams.filter(x=>x.league==='lo'&&x.id!==t.id);
+ function toggleWard(id:string,checked:boolean){setWardIds(prev=>checked?[...new Set([...prev,id])]:prev.filter(x=>x!==id))}
+ function saveTeam(){
+  update(n=>{
+   const saved={...t,name:t.name.trim(),mentorId:t.league==='lo'?t.mentorId:''};
+   const index=n.teams.findIndex(x=>x.id===t.id);
+   if(index<0)n.teams.push(saved);else n.teams[index]=saved;
+   // A ward stores only its mentorId. Both editors must update that same relationship.
+   n.teams=n.teams.map(x=>{
+    if(x.id===t.id||x.league!=='lo')return x;
+    if(t.league==='pl'){
+     if(wardIds.includes(x.id))return {...x,mentorId:t.id};
+     if(x.mentorId===t.id)return {...x,mentorId:''};
+    }else if(x.mentorId===t.id)return {...x,mentorId:''};
+    return x;
+   });
+  });
+  p.selectTeam(t.id);close();
+ }
+ function removeTeam(){
+  update(n=>{
+   n.teams=n.teams.filter(x=>x.id!==t.id).map(x=>x.mentorId===t.id?{...x,mentorId:''}:x);
+   Object.keys(n.tasks).filter(k=>k.startsWith(t.id+'/')).forEach(k=>delete n.tasks[k]);
+   n.events=n.events.map(e=>({...e,teamIds:e.teamIds.filter(id=>id!==t.id),journalTeams:e.journalTeams.filter(id=>id!==t.id),taskRefs:e.taskRefs.filter(r=>!r.startsWith(t.id+'/'))})).filter(e=>e.teamIds.length);
+  });
+  p.selectTeam(plan.teams.find(x=>x.id!==t.id)!.id);close();
+ }
+ return <Modal close={close}>
+  <Head eyebrow="ПЕРВИЧНОЕ ОТДЕЛЕНИЕ" title={value?'Настройки команды':'Добавить команду'} close={close}/>
+  <div className="modal-body form-stack">
+   <label>Название первички<input autoFocus value={t.name} onChange={e=>set({...t,name:e.target.value})} placeholder="Название вашей команды"/></label>
+   <label>Лига<select value={t.league} onChange={e=>{const league=e.target.value as League;set({...t,league,mentorId:league==='lo'?t.mentorId:''});if(league!=='pl')setWardIds([])}}>{Object.entries(leagues).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></label>
+   <div className="note"><Info size={17}/>{t.league==='lo'?'Неучётные первички: учреждения культуры, спорта, допобразования и другие организации по Положению.':t.league==='pl'?'Участники, предусмотренные Положением из числа победителей и Первой лиги предыдущего сезона.':'Учётные первички образовательных организаций, не относящиеся к Первой лиге.'}</div>
+   {t.league==='lo'&&<>
+    <label>Команда-шеф (Первая лига)
+     <select value={mentors.some(x=>x.id===t.mentorId)?t.mentorId:''} onChange={e=>set({...t,mentorId:e.target.value})}>
+      <option value="">Без шефа</option>
+      {mentors.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+     </select>
+    </label>
+    {!mentors.length&&<div className="note"><Info size={17}/>Сначала добавьте команду-шефа с лигой «Первая лига», затем выберите её здесь.</div>}
+   </>}
+   {t.league==='pl'&&<div className="form-stack">
+    <div><b>Подшефные команды (Лига открытий)</b><p className="note">Отметьте нужные первички. Связь также появится в карточке каждой подшефной команды.</p></div>
+    {wards.length?<div role="group" aria-label="Выбор подшефных команд">
+     {wards.map(x=><label className="check-row" key={x.id}>
+      <input type="checkbox" checked={wardIds.includes(x.id)} onChange={e=>toggleWard(x.id,e.target.checked)}/>
+      <span>{x.name}{x.mentorId&&x.mentorId!==t.id&&<small> · Сейчас шеф: {plan.teams.find(y=>y.id===x.mentorId)?.name||'не найдена'}</small>}</span>
+     </label>)}
+    </div>:<div className="note"><Info size={17}/>Пока нет команд «Лиги открытий». Добавьте подшефную первичку в разделе «Команды».</div>}
+   </div>}
+   <label>Ваш ориентир нагрузки в неделю<input type="number" min="1" max="12" value={t.capacity} onChange={e=>set({...t,capacity:Math.max(1,Math.min(12,Number(e.target.value)||1))})}/></label>
+   <p className="note">Считаются события и контрольные точки. Это ваш ориентир, не норматив конкурса.</p>
+   <label className="check-row"><input type="checkbox" checked={t.firstGraders} onChange={e=>set({...t,firstGraders:e.target.checked})}/>В команде или аудитории есть первоклассники</label>
+  </div>
+  <div className="modal-footer">
+   {value&&plan.teams.length>1&&<button className="button subtle danger-text" onClick={removeTeam}><Trash2 size={16}/>Удалить</button>}
+   <button className="button secondary" onClick={close}>Отмена</button>
+   <button disabled={!t.name.trim()} className="button primary" onClick={saveTeam}>Сохранить команду</button>
+  </div>
+ </Modal>
+}
