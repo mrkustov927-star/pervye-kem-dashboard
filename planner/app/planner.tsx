@@ -32,7 +32,7 @@ export default function Planner(){
   const draft=backup;
   update(next=>{
    const idMap=new Map<string,string>();
-   const normalize=(name:string)=>name.trim().toLocaleLowerCase('ru-RU').replace(/\\s+/g,' ');
+   const normalize=(name:string)=>name.trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,' ');
    for(const t of draft.teams){
     const existing=next.teams.find(x=>x.id===t.id)||next.teams.find(x=>x.league===t.league&&normalize(x.name)===normalize(t.name));
     if(existing){idMap.set(t.id,existing.id);continue;}
