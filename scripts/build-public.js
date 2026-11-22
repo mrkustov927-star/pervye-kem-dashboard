@@ -7,7 +7,8 @@ for(const file of files){const dest=path.join(out,file);fs.mkdirSync(path.dirnam
 const version=process.env.GITHUB_SHA||process.env.VERCEL_GIT_COMMIT_SHA||'development';
 for(const file of ['index.html','admin/index.html']){
   const target=path.join(out,file);
-  const html=fs.readFileSync(target,'utf8').replace(/((?:src|href)="(?:\.\/)?(?:styles\.css|access\.js|app\.js|admin\.css|admin\.js))(?:\?[^"\s]*)?"/g,(_,prefix)=>prefix+'?v='+encodeURIComponent(version)+'"');
+  let html=fs.readFileSync(target,'utf8').replace(/((?:src|href)="(?:\.\/)?(?:styles\.css|access\.js|app\.js|admin\.css|admin\.js))(?:\?[^"\s]*)?"/g,(_,prefix)=>prefix+'?v='+encodeURIComponent(version)+'"');
+  if(file==='index.html') html=html.replace('href="./planner/"','href="./planner/?v='+encodeURIComponent(version)+'"');
   fs.writeFileSync(target,html);
 }
 fs.writeFileSync(path.join(out,'robots.txt'),'User-agent: *\nDisallow: /\n');
