@@ -16,7 +16,7 @@ export default function Planner(){
  const team=plan.teams.find(t=>t.id===teamId)??plan.teams[0],list=forTeam(team),issues=allIssues(plan,team),finished=list.filter(t=>getTask(plan,team,t).status==='submitted').length;
  function notify(s:string){setToast(s);setTimeout(()=>setToast(''),4500)}
  const update:Update=(fn)=>{if(mode==='readonly'){notify('Открыт общий план для просмотра. Для изменений нужна специальная ссылка редактора.');return;}setPlan(prev=>{undo.current=prev;const next=structuredClone(prev);fn(next);next.updatedAt=new Date().toISOString();return next});};
- useEffect(()=>{let stopped=false;let cached:Plan|null=null;try{const s=localStorage.getItem(CACHE);if(s)cached=parsePlan(s)}catch{}(window as any).planRequest({cache:'no-store'}).then(async r=>{const j:any=await r.json();if(!r.ok)throw Error(j.error);if(stopped)return;revision.current=j.revision??'';setMode(j.mode);const next=j.state?parsePlan(JSON.stringify(j.state)):j.mode==='saved'&&cached?cached:initialPlan();setPlan(next);lastSaved.current=JSON.stringify(next);if(cached&&cached.updatedAt&&j.mode==='saved'&&(!j.updatedAt||cached.updatedAt>j.updatedAt))setBackup(cached);setSave(j.mode==='readonly'?'readonly':'saved');setLoaded(true)}).catch(e=>{if(stopped)return;if(cached)setPlan(cached);setMode('offline');setSave('error');setSaveError('План не загружен: '+e.message);setLoaded(true)});return()=>{stopped=true}},[]);
+ useEffect(()=>{let stopped=false;let cached:Plan|null=null;try{const s=localStorage.getItem(CACHE);if(s)cached=parsePlan(s)}catch{}(window as any).planRequest({cache:'no-store'}).then(async r=>{const j:any=await r.json();if(!r.ok)throw Error(j.error);if(stopped)return;revision.current=j.revision??'';setMode(j.mode);const next=j.state?parsePlan(JSON.stringify(j.state)):j.mode==='saved'&&cached?cached:initialPlan();setPlan(next);lastSaved.current=JSON.stringify(next);if(cached&&cached.updatedAt&&j.mode==='saved'&&(!j.state||JSON.stringify(cached)!==JSON.stringify(next))){try{localStorage.setItem('kpo-curators-pre-merge-backup-v1',JSON.stringify(cached))}catch{}setBackup(cached);}setSave(j.mode==='readonly'?'readonly':'saved');setLoaded(true)}).catch(e=>{if(stopped)return;if(cached)setPlan(cached);setMode('offline');setSave('error');setSaveError('План не загружен: '+e.message);setLoaded(true)});return()=>{stopped=true}},[]);
  async function persist(snapshot:Plan){if(conflict.current)return;if(inFlight.current){queued.current=snapshot;return}inFlight.current=true;setSave('saving');try{const r=await (window as any).planRequest({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state:snapshot,revision:revision.current})});const j:any=await r.json();if(!r.ok){if(r.status===409)conflict.current=true;throw Error(j.error||'Не удалось сохранить')}revision.current=j.revision;lastSaved.current=JSON.stringify(snapshot);setSave('saved');setSaveError('')}catch(e:any){setSave('error');setSaveError(e.message)}finally{inFlight.current=false;const next=queued.current;queued.current=null;if(next&&JSON.stringify(next)!==lastSaved.current&&!conflict.current)persist(next)}}
  useEffect(()=>{if(!loaded)return;if(mode==='readonly')return;try{localStorage.setItem(CACHE,JSON.stringify(plan))}catch{}if(JSON.stringify(plan)===lastSaved.current)return;if(mode==='offline')return;const timer=setTimeout(()=>persist(plan),900);return()=>clearTimeout(timer)},[plan,loaded,mode]);
  useEffect(()=>{if(!list.some(t=>t.key===selected))setSelected(list.at(-1)!.key)},[teamId,team.league]);
@@ -26,6 +26,42 @@ export default function Planner(){
  function focusTask(id:string,key:string){setTeamId(id);setSelected(key);setTaskDialog(null);setView('map')}
  function download(type:'json'|'csv'){let value='',mime='',name='';if(type==='json'){value=JSON.stringify(plan,null,2);mime='application/json';name='plan-pervye.json'}else{const rows=[['Лига','Первичка','Задание','Вариант','Ответственный','Подготовка','Событие','Сдача','Статус'],...list.map(t=>{const a=getTask(plan,team,t),v=variant(t,a,team);return[leagues[team.league],team.name,'№ '+t.number,v.title,a.owner,a.start,a.end,a.submit,a.status]})];value='\uFEFF'+rows.map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(';')).join('\r\n');mime='text/csv;charset=utf-8';name='plan-pervye.csv'}const url=URL.createObjectURL(new Blob([value],{type:mime}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportMenu(false)}
  async function importFile(file?:File){if(!file)return;try{if(file.size>1500000)throw Error('Файл слишком большой');const next=parsePlan(await file.text());undo.current=plan;next.updatedAt=new Date().toISOString();setPlan(next);setTeamId(next.teams[0].id);notify('План импортирован. Предыдущую версию можно вернуть кнопкой отмены.')}catch(e:any){notify(e.message)}if(importRef.current)importRef.current.value=''}
+
+ function mergeLocalDraft(){
+  if(!backup||mode!=='saved')return;
+  const draft=backup;
+  update(next=>{
+   const idMap=new Map<string,string>();
+   const normalize=(name:string)=>name.trim().toLocaleLowerCase('ru-RU').replace(/\\s+/g,' ');
+   for(const t of draft.teams){
+    const existing=next.teams.find(x=>x.id===t.id)||next.teams.find(x=>x.league===t.league&&normalize(x.name)===normalize(t.name));
+    if(existing){idMap.set(t.id,existing.id);continue;}
+    next.teams.push({...t,mentorId:''});idMap.set(t.id,t.id);
+   }
+   for(const t of draft.teams){
+    const target=next.teams.find(x=>x.id===idMap.get(t.id));
+    const mentor=idMap.get(t.mentorId);
+    if(target&&target.league==='lo'&&!target.mentorId&&mentor&&next.teams.some(x=>x.id===mentor&&x.league==='pl'))target.mentorId=mentor;
+   }
+   for(const [key,task] of Object.entries(draft.tasks)){
+    const n=key.indexOf('/');if(n<1)continue;
+    const mapped=idMap.get(key.slice(0,n));if(!mapped)continue;
+    const targetKey=mapped+key.slice(n);
+    if(!(targetKey in next.tasks))next.tasks[targetKey]=task;
+   }
+   const existingEvents=new Set(next.events.map(e=>e.id));
+   for(const e of draft.events){
+    if(existingEvents.has(e.id))continue;
+    const teamIds=[...new Set(e.teamIds.map(id=>idMap.get(id)).filter((id):id is string=>!!id))];
+    if(!teamIds.length)continue;
+    const journalTeams=[...new Set(e.journalTeams.map(id=>idMap.get(id)).filter((id):id is string=>!!id))];
+    const taskRefs=e.taskRefs.map(r=>{const n=r.indexOf('/');if(n<0)return '';const mapped=idMap.get(r.slice(0,n));return mapped?mapped+r.slice(n):''}).filter(Boolean);
+    next.events.push({...e,teamIds,journalTeams,taskRefs});
+   }
+  });
+  setBackup(null);
+  notify('Локальные команды и новые записи объединены с общим планом');
+ }
  const props:ViewProps={plan,team,update,openTask,openEvent:(event,taskKey,preset)=>setEventDialog(taskKey&&list.some(t=>t.key===taskKey&&t.number===2)?{event,preset:{category:'own',journalTeams:[team.id],...preset}}:{event,taskKey,preset}),openTeam:t=>mode==='readonly'?notify('Для изменения команд откройте специальную ссылку редактора.'):setTeamDialog({team:t}),selectTeam:chooseTeam,focusTask,showTeams:()=>setView('teams'),selected,selectTask:setSelected};
  if(!loaded)return <div className="boot"><div className="brand-mark"><span/><span/><span/></div><h1>План работы первичек</h1><p><LoaderCircle className="spin" size={20}/> Открываем ваш план</p></div>;
  return <><div className="app-shell"><aside className="sidebar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setView('map')}}><div className="brand-mark"><span/><span/><span/></div><div>ПЕРВИЧКА<span>План работы</span></div></a><div className="season-tag">КОНКУРС · СЕЗОН 4</div><nav>{nav.map(([key,title,Icon])=><button key={key} className={view===key?'nav-item active':'nav-item'} onClick={()=>setView(key)}><Icon size={20}/>{title}{key==='journal'&&<span className="nav-count">{team.league==='lo'?15:25}</span>}</button>)}</nav><div className="sidebar-bottom"><div className="tiny-label">ОБЩИЙ ЗАЧЁТ</div><strong>23 ноя — 28 фев</strong><p>Капитан отправляет отчёты в личном кабинете конкурса.</p><div className="sidebar-foot">План команды · не кабинет конкурса</div></div></aside>
@@ -34,7 +70,7 @@ export default function Planner(){
  
  {save==='error'&&<div className="notice danger"><AlertTriangle size={19}/><div><b>Изменения пока не сохранены.</b> {saveError} {mode==='offline'?'Обновите страницу, когда связь восстановится.':'Повторите сохранение, прежде чем закрыть страницу.'}</div>{!conflict.current&&mode!=='offline'&&<button onClick={()=>persist(plan)}>Повторить</button>}</div>}
 
- {mode==='saved'&&backup&&<div className="notice"><Undo2 size={18}/><div><b>Ваши ранее введённые первички найдены на этом устройстве.</b> Вы можете перенести их в общий план округа. Если другие кураторы уже заполняли общий план, сначала скачайте его резервную копию.</div><button onClick={()=>{setPlan({...backup,updatedAt:new Date().toISOString()});setBackup(null);notify('Восстанавливаем черновик и сохраняем общий план')}}>Опубликовать мой план</button><button onClick={()=>setBackup(null)}>Позже</button></div>}
+ {mode==='saved'&&backup&&<div className="notice"><Undo2 size={18}/><div><b>Найден локальный черновик.</b> Его можно объединить с общим планом без удаления уже опубликованных первичек, заданий и мероприятий. Совпадающие записи общего плана сохраняются.</div><button onClick={mergeLocalDraft}>Объединить с общим планом</button><button onClick={()=>setBackup(null)}>Позже</button></div>}
  <section className="nomination-section" aria-label="Выбор номинации"><h2>Номинация конкурса</h2><div className="nomination-switch" role="group" aria-label="Номинация конкурса">{(Object.keys(leagues) as League[]).map(code=><button type="button" key={code} aria-pressed={team.league===code} className={'nomination-choice '+code+(team.league===code?' selected':'')} onClick={()=>chooseNomination(code)}><span className="nomination-choice-title">{leagues[code]}{team.league===code&&<Check size={18}/>}</span><span>{code==='lo'?'10 заданий · до 480 баллов':code==='pl'?'15 заданий · до 740 баллов и 20 за шефство':'15 заданий · до 740 баллов'}</span></button>)}</div></section>
  <div className="context-bar"><span className="context-caption">Первичка:</span><label className="team-picker"><span className="team-dot" style={{background:colors[team.league]}}/><select aria-label="Активная первичка" value={team.id} onChange={e=>chooseTeam(e.target.value)}>{plan.teams.filter(t=>t.league===team.league).map(t=><option value={t.id} key={t.id}>{t.name}</option>)}</select></label><span className="context-spacer"/><span className="context-stat"><Check size={16}/>{finished} из {list.length} сдач отмечено</span><button className="text-button" onClick={()=>{setView('tasks');notify('Откройте задачу: замечания показаны в её карточке задания.')}}><AlertTriangle size={16}/>{issues.filter(x=>x.level==='error').length} конфликтов</button></div>
  {view==='map'?<MapView {...props}/>:view==='calendar'?<CalendarView {...props}/>:view==='tasks'?<TasksView {...props}/>:view==='journal'?<JournalView {...props}/>:view==='teams'?<TeamsView {...props}/>:<RulesView/>}
