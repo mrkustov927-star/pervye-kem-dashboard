@@ -1,6 +1,7 @@
 (()=>{
   const base='https://pervye-kem-dashboard.vercel.app';
   const key='pervyeCuratorSession:v1';
+  const version=new URL(document.currentScript.src).searchParams.get('v')||'development';
   const form=document.querySelector('#curatorLogin');
   const message=document.querySelector('#curatorMessage');
   const login=document.querySelector('#curatorAccess');
@@ -11,7 +12,7 @@
   const exit=()=>{forget();location.reload();};
   async function request(path,options={}){
     const response=await fetch(base+path,{...options,cache:'no-store',credentials:'omit',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(options.headers||{})}});
-    if(response.status===401){forget();throw new Error('Войдите в кабинет заново.');}
+    if(response.status===401){forget();if(!dashboard.hidden)location.reload();throw new Error('Войдите в кабинет заново.');}
     return response;
   }
   async function download(path){
@@ -30,8 +31,9 @@
     const result=await response.json();
     if(!response.ok||!result.ok)throw new Error(result.error||'Не удалось загрузить материалы.');
     window.DASHBOARD_DATA=result.data;
-    await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./app.js?v=20261122-private';script.onload=resolve;script.onerror=()=>reject(new Error('Не удалось открыть кабинет. Обновите страницу.'));document.body.append(script);});
+    await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./app.js?v='+encodeURIComponent(version);script.onload=resolve;script.onerror=()=>reject(new Error('Не удалось открыть кабинет. Обновите страницу.'));document.body.append(script);});
     login.hidden=true;dashboard.hidden=false;
+    window.dispatchEvent(new Event("resize"));
     document.querySelector('#curatorLogout').addEventListener('click',exit);
     const hash=location.hash;if(/^#[a-z-]+$/.test(hash))document.querySelector(hash)?.scrollIntoView();
   }
