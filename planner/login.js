@@ -1,7 +1,19 @@
 (()=>{
   const base=location.hostname.endsWith('github.io')?'https://pervye-kem-dashboard.vercel.app':location.origin;
   const status=document.querySelector('#status');
-  window.planRequest=async(options={},query='')=>fetch(base+'/api/planner'+query,{...options,credentials:'omit',cache:'no-store',headers:{...(options.headers||{})}});
+  const accessKey='kpoPlannerEditorLink:v1';
+  let editorToken='';
+  try{
+    if(/^#edit=[A-Za-z0-9_-]{32,200}$/.test(location.hash)){
+      editorToken=location.hash.slice(6);
+      sessionStorage.setItem(accessKey,editorToken);
+      history.replaceState(null,'',location.pathname+location.search);
+    }else editorToken=sessionStorage.getItem(accessKey)||'';
+  }catch{}
+  window.planRequest=async(options={},query='')=>fetch(base+'/api/planner'+query,{
+    ...options,credentials:'omit',cache:'no-store',
+    headers:{...(editorToken?{Authorization:'Bearer '+editorToken}:{}),...(options.headers||{})}
+  });
   async function open(){
     status.textContent='Загружаем задания трёх лиг…';
     const response=await window.planRequest({},'?catalog=1');
