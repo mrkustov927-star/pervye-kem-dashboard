@@ -21,7 +21,7 @@ jobs:
       - name: Check access controls
         run: node --test tests/access.test.cjs
       - name: Prepare public interface without data
-        run: node scripts/build-public.js
+        run: node scripts/build-public.js && npm install --prefix planner --no-audit --no-fund && npm run build --prefix planner
       - uses: actions/configure-pages@v5
         with:
           enablement: true

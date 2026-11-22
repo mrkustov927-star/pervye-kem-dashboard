@@ -266,8 +266,9 @@
     }).map(stage=>({item,stage}))).sort((a,b)=>(a.stage.start||a.stage.end||a.stage.monthStart).localeCompare(b.stage.start||b.stage.end||b.stage.monthStart));
   }
   function setupSidebar(){
-    const sections=$$("main > section[id]").filter(el=>el.id!=="top");
+    const sections=$$("#dashboard main > section[id]").filter(el=>el.id!=="top");
     const update=()=>{
+      if($("#dashboard").hidden)return;
       let active="";
       sections.forEach(el=>{if(el.getBoundingClientRect().top<=150)active=el.id});
       $$(".desktop-sidebar a,.header-links a,.mobile-nav a").forEach(a=>{
@@ -684,7 +685,7 @@
   const searchInput=$("#globalSearch");
   if(searchInput) searchInput.oninput=e=>doSearch(e.target.value);
   document.addEventListener("keydown",e=>{
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();const input=$("#globalSearch");if(input)input.focus()}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();const input=$("#globalSearch");if(input){if($("#dashboard").hidden){location.hash="#top";routeWorkspace();}input.focus()}}
     if(e.key==="Escape"){closeModal();const panel=$("#searchPanel");if(panel)panel.hidden=true;document.body.style.overflow="";return}
     const modal=$("#detailModal");
     if(e.key==="Tab"&&modal&&!modal.hidden){
@@ -715,10 +716,55 @@
   run("archive",renderArchive);
   run("favorites",renderFavorites);
   run("sidebar",setupSidebar);
-  run("deep-link",()=>{
+  function renderPrimary(){
+    const root=$("#primaryContent");
+    const contest=items.find(i=>i.id==="primary-contest"&&isPublic(i));
+    if(!contest){root.innerHTML='<h1 id="primaryTitle" tabindex="-1">Конкурс первичных отделений</h1><p class="empty">Материалы конкурса готовятся.</p>';return;}
+    const stages=stagesFor(contest);
+    const tasks=stages.map(stage=>items.find(i=>i.id===stage.itemId&&i.type==="task"&&isPublic(i))).filter(Boolean);
+    const uniqueTasks=[...new Map(tasks.map(i=>[i.id,i])).values()];
+    const activeTasks=uniqueTasks.filter(i=>!expired(i)||reportPending(i));
+    const pastTasks=uniqueTasks.filter(i=>expired(i)&&!reportPending(i));
+    const taskCards=list=>'<div class="primary-task-list">'+list.map(i=>'<button class="saved-entry" data-open="'+esc(i.id)+'"><strong>'+esc(i.title)+'</strong><span>'+esc(i.short)+'</span>'+(nextDeadline(i)?'<em>До '+esc(fmtYear(nextDeadline(i)))+'</em>':'')+'</button>').join('')+'</div>';
+    const stageEnd=stage=>stage.end||stage.start||monthEnd(stage.monthEnd||stage.monthStart)||"9999";
+    const current=stages.filter(stage=>stageEnd(stage)>=todayMoscow).sort((a,b)=>(a.start||a.end||a.monthStart||"9999").localeCompare(b.start||b.end||b.monthStart||"9999"));
+    const past=stages.filter(stage=>stageEnd(stage)<todayMoscow);
+    const rows=list=>'<ol class="primary-stages">'+list.map(stage=>'<li><span class="primary-stage-label">'+esc(calendarLabel(stage.title,stage.kind,{label:stage.label,type:contest.type,stage:true}))+'</span><h3>'+esc(stage.title)+'</h3><p class="primary-stage-date">'+esc(stagePeriod(stage))+'</p>'+(stage.note?'<p>'+esc(stage.note)+'</p>':"")+(stage.itemId&&uniqueTasks.some(i=>i.id===stage.itemId)?'<button class="secondary-action" type="button" data-open="'+esc(stage.itemId)+'">Открыть задание</button>':"")+'</li>').join("")+'</ol>';
+    const deadlines=[stages.find(stage=>stage.id==="applications"),stages.find(stage=>stage.id==="moderation")].filter(stage=>stage&&stageEnd(stage)>=todayMoscow);
+    root.innerHTML='<section class="primary-intro"><p class="curator-kicker">Сезон 2026–2027</p><h1 id="primaryTitle" tabindex="-1">Конкурс первичных отделений</h1><p class="portal-lead">'+esc(contest.short)+'</p><button class="primary-action" type="button" data-open="'+esc(contest.id)+'">Условия и документы</button> <a class="primary-action" href="./planner/">Открыть планировщик трёх лиг</a></section>'+
+      (deadlines.length?'<div class="primary-deadlines">'+deadlines.map(stage=>'<article><h2>'+esc(calendarLabel(stage.title,stage.kind,{label:stage.label,stage:true}))+'</h2><strong>'+esc(stagePeriod(stage))+'</strong>'+(stage.note?'<p>'+esc(stage.note)+'</p>':"")+'</article>').join("")+'</div>':"")+
+      '<section class="primary-panel" aria-labelledby="primaryTasksTitle"><h2 id="primaryTasksTitle">Конкурсные задания</h2>'+(activeTasks.length?taskCards(activeTasks):'<p>'+ (uniqueTasks.length?'Сейчас нет опубликованных заданий с действующим сроком.':'Задания с конкретными сроками появятся здесь после получения материалов конкурса.')+'</p>')+(pastTasks.length?'<details class="primary-history"><summary>Архив заданий ('+pastTasks.length+')</summary>'+taskCards(pastTasks)+'</details>':"")+'</section>'+
+      '<section class="primary-panel" aria-labelledby="primaryStagesTitle"><h2 id="primaryStagesTitle">Этапы и сроки</h2>'+ (current.length?rows(current):'<p>Все опубликованные этапы завершены.</p>')+(past.length?'<details class="primary-history"><summary>Прошедшие этапы ('+past.length+')</summary>'+rows(past)+'</details>':"")+'</section>';
+  }
+  let workspaceReady=false;
+  function routeWorkspace(focus=false){
+    if(!workspaceReady)return;
+    const hash=canonicalSection(location.hash);
+    const deepCard=new URL(location.href).searchParams.get("card");
+    const primary=items.find(i=>i.id==="primary-contest"&&isPublic(i));
+    const primaryIds=new Set([primary?.id,...stagesFor(primary||{}).map(stage=>stage.itemId)].filter(Boolean));
+    const view=hash==="#home"?"home":hash==="#primary"?"primary":hash?"calendar":deepCard?(primaryIds.has(deepCard)?"primary":"calendar"):"home";
+    if(document.body.dataset.workspace&&document.body.dataset.workspace!==view)closeModal();
+    document.body.dataset.workspace=view;
+    $("#workspacePicker").hidden=view!=="home";
+    $("#dashboard").hidden=view!=="calendar";
+    $("#primaryWorkspace").hidden=view!=="primary";
+    $("#searchPanel").hidden=true;
+    document.title=(view==="home"?"Выбор раздела":view==="primary"?"Конкурс первичных отделений":"Календарь и материалы")+" · Первые · Кемский округ";
+    if(view==="calendar")revealSection(hash);
+    window.dispatchEvent(new Event("resize"));
+    requestAnimationFrame(()=>{
+      const target=view==="home"?$("#workspaceTitle"):view==="primary"?$("#primaryTitle"):(/^#[a-z-]+$/.test(hash)?$(hash):null)||$("#top");
+      if(view==="calendar")target?.scrollIntoView();else window.scrollTo(0,0);
+      if(focus){const heading=view==="calendar"?$("summary",target)||$("h1",target):target;heading?.focus({preventScroll:true});}
+    });
+  }
+  window.DASHBOARD_PORTAL={open(){
+    workspaceReady=true;
+    renderPrimary();
+    routeWorkspace();
     const deepLinkedCard=new URL(location.href).searchParams.get("card");
-    if(deepLinkedCard)setTimeout(()=>openModal(deepLinkedCard),0);
-  });
+    if(deepLinkedCard)openModal(deepLinkedCard);
+  }};
+  window.addEventListener("hashchange",()=>routeWorkspace(true));
 })();
-
-
