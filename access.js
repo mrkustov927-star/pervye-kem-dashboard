@@ -18,7 +18,10 @@
     }catch{goToLogin();return;}
   }
   async function request(path,options={}){
-    const response=await fetch(base+path,{...options,cache:'no-store',credentials:'omit',headers:session?{Authorization:'Bearer '+session}:{}});
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),25000);
+    let response;
+    try{response=await fetch(base+path,{...options,signal:controller.signal,cache:'no-store',credentials:'omit',headers:session?{Authorization:'Bearer '+session}:{}});}finally{clearTimeout(timer);}
     if(contest&&response.status===401){goToLogin();throw Error();}
     if(!response.ok){let details={};try{details=await response.clone().json()}catch{}
       throw Error(details.error||'Не удалось загрузить данные. Повторите попытку позже.');}
@@ -49,8 +52,18 @@
   function loadContent(){
     recovery.hidden=true;
     message.textContent='Загружаем опубликованные материалы.';
-    open().catch(()=>{message.textContent='Пока не удалось загрузить календарь и материалы.';recovery.hidden=false;});
+    return open().catch(()=>{message.textContent='Пока не удалось загрузить календарь и материалы.';recovery.hidden=false;});
   }
   document.querySelector('#retryContent').addEventListener('click',loadContent);
-  loadContent();
+  const picker=document.querySelector('#workspacePicker');
+  const isHome=()=>!new URLSearchParams(location.search).has('card')&&(!location.hash||location.hash==='#home');
+  let pending=false;
+  function navigate(){
+    if(window.DASHBOARD_PORTAL)return;
+    if(isHome()){gate.hidden=true;picker.hidden=false;return;}
+    picker.hidden=true;gate.hidden=false;
+    if(!pending){pending=true;loadContent().finally(()=>{pending=false;});}
+  }
+  window.addEventListener('hashchange',navigate);
+  navigate();
 })();
