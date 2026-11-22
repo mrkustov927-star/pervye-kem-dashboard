@@ -17,3 +17,4 @@ fs.writeFileSync(path.join(outdir, 'index.html'), html);
 fs.writeFileSync(path.join(outdir, 'login.js'), login.replace("'./planner.js'", "'./planner.js?v=" + version + "'"));
 
 fs.writeFileSync(path.join(outdir,'connection.html'),fs.readFileSync(path.join(__dirname,'connection.html'),'utf8').replace('../connection.js"','../connection.js?v='+version+'"'));
+fs.cpSync(path.join(__dirname,'guide'),path.join(outdir,'guide'),{recursive:true});

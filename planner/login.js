@@ -10,6 +10,7 @@
     history.replaceState(null,'',location.pathname+location.search);
   }
   const checkLink=document.querySelector('#checkLink');
+  if(!editor && new URLSearchParams(location.search).get('shared')!=='1'){location.replace('./guide/');return;}
   function ask(message){
     session='';remember(sessionKey,'');form.hidden=false;actions.hidden=true;status.textContent=message;
     if(started){document.querySelector('#planner').replaceChildren();location.reload();}else input.focus();
