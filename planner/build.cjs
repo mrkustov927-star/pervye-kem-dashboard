@@ -14,5 +14,4 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8')
   .replace('./login.js"', './login.js?v=' + version + '"');
 fs.writeFileSync(path.join(outdir, 'index.html'), html);
 fs.writeFileSync(path.join(outdir, 'login.js'), login.replace("'./planner.js'", "'./planner.js?v=" + version + "'"));
-fs.copyFileSync(path.join(__dirname, 'ded-plan.html'), path.join(outdir, 'ded-plan.html'));
 

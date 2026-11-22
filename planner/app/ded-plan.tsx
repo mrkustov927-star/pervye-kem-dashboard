@@ -1,11 +1,23 @@
+import {useState} from 'react';
 import type {ViewProps} from './planner';
 const dates = (window as any).planCatalog.ded;
 
 export {dates as dedDates};
 
 export function DedPlan({plan,team,openEvent,readOnly}:ViewProps) {
+  const [error,setError]=useState('');
+  async function download(){
+    setError('');
+    try{
+      const r=await (window as any).planRequest({},'?handout=1');
+      if(!r.ok)throw Error();
+      const url=URL.createObjectURL(await r.blob());
+      const a=document.createElement('a');a.href=url;a.download='План-ДЕД.html';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch{setError('Не удалось скачать план. Попробуйте ещё раз.');}
+  }
   return <section className="panel" aria-labelledby="ded-heading">
-    <div className="panel-title"><h2 id="ded-heading">План дней единых действий</h2><a className="button secondary" href="./ded-plan.html" download="План-ДЕД.html">Скачать для первичек</a></div>
+    <div className="panel-title"><h2 id="ded-heading">План дней единых действий</h2><button className="button secondary" onClick={download}>Скачать для первичек</button></div>{error&&<p role="alert">{error}</p>}
     <p>Для полного объёма журнала каждой команде нужны четыре разных ДЕД. В общий план включены «Мамино сердце» и по одному ориентиру на декабрь, январь и февраль. Ещё две даты предложены в резерв. Сведения на 22 ноября 2026 года.</p>
     <div className="anchor-grid">{dates.map(action=>{
       const existing=plan.events.find(e=>e.teamIds.includes(team.id)&&e.category==='ded'&&(e.dedId===action.date||e.title===action.title));

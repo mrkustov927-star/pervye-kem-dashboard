@@ -3,8 +3,23 @@
   const version=new URL(document.currentScript.src).searchParams.get('v')||'development';
   const message=document.querySelector('#curatorMessage');
   const gate=document.querySelector('#curatorAccess');
+  function isContest(){return location.hash==='#primary'||new URLSearchParams(location.search).get('card')==='primary-contest';}
+  const contest=isContest();
+  let session='';
+  if(contest){try{session=sessionStorage.getItem('kpoPlannerSession:v1')||'';}catch{}}
+  const goToLogin=()=>location.replace('./planner/');
+  if(contest&&!session){goToLogin();return;}
+  window.addEventListener('hashchange',()=>{if(contest!==isContest())location.reload();});
+  window.addEventListener('pageshow',e=>{if(contest&&e.persisted)location.reload();});
+  if(contest){
+    try{
+      const payload=JSON.parse(atob(session.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));
+      setTimeout(goToLogin,Math.max(0,payload.exp-Date.now()));
+    }catch{goToLogin();return;}
+  }
   async function request(path,options={}){
-    const response=await fetch(base+path,{...options,cache:'no-store',credentials:'omit'});
+    const response=await fetch(base+path,{...options,cache:'no-store',credentials:'omit',headers:session?{Authorization:'Bearer '+session}:{}});
+    if(contest&&response.status===401){goToLogin();throw Error();}
     if(!response.ok){let details={};try{details=await response.clone().json()}catch{}
       throw Error(details.error||'Не удалось загрузить данные. Повторите попытку позже.');}
     return response;
