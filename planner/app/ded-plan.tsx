@@ -1,0 +1,26 @@
+import type {ViewProps} from './planner';
+const dates = (window as any).planCatalog.ded;
+
+export {dates as dedDates};
+
+export function DedPlan({plan,team,openEvent}:ViewProps) {
+  return <section className="panel" aria-labelledby="ded-heading">
+    <div className="panel-title"><h2 id="ded-heading">План дней единых действий</h2><a className="button secondary" href="./ded-plan.html" download="План-ДЕД.html">Скачать для первичек</a></div>
+    <p>Для полного объёма журнала каждой команде нужны четыре разных ДЕД. В общий план включены «Мамино сердце» и по одному ориентиру на декабрь, январь и февраль. Ещё две даты предложены в резерв. Сведения на 22 ноября 2026 года.</p>
+    <div className="anchor-grid">{dates.map(action=>{
+      const existing=plan.events.find(e=>e.teamIds.includes(team.id)&&e.category==='ded'&&(e.dedId===action.date||e.title===action.title));
+      return <article key={action.date} className="anchor-card">
+        <time dateTime={action.date}>{action.period}</time><strong>{action.title}</strong>
+        <span className={'micro-tag'+(action.confirmed?'':' amber')}>{action.status}</span>
+        {!action.confirmed&&<small>Ожидаем условия акции</small>}<p>{action.detail}</p>
+        <a href={action.url} target="_blank" rel="noreferrer">{action.source}</a>
+        <button className="text-button" onClick={()=>existing?openEvent(existing):openEvent(undefined,undefined,{
+          title:action.title,date:action.date,dedId:action.date,category:'ded',officialConfirmed:action.confirmed,
+          sourceUrl:action.confirmed?action.url:'',journalTeams:[team.id]
+        })}>{existing?'Открыть событие команды':action.confirmed?'Выбрать дату участия':'Запланировать предварительно'}</button>
+      </article>
+    })}</div>
+    <p>Перед проведением уточните возраст участников, сроки, формат и хештеги в разделе «Акции». <a href="https://projects.pervye.ru/" target="_blank" rel="noreferrer">Проектный модуль Движения Первых</a></p>
+  </section>
+}
+
