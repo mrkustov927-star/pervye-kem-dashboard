@@ -731,10 +731,9 @@
     const deepCard=new URL(location.href).searchParams.get("card");
     const primary=items.find(i=>i.id==="primary-contest"&&isPublic(i));
     const primaryIds=new Set([primary?.id,...stagesFor(primary||{}).map(stage=>stage.itemId)].filter(Boolean));
-    const view=hash==="#home"?"home":hash==="#primary"?"primary":hash?"calendar":deepCard?(primaryIds.has(deepCard)?"primary":"calendar"):"home";
+    const view=hash==="#home"?"home":hash==="#primary"?"primary":hash?"calendar":deepCard?(primaryIds.has(deepCard)?"primary":"calendar"):"calendar";
     if(document.body.dataset.workspace&&document.body.dataset.workspace!==view)closeModal();
     document.body.dataset.workspace=view;
-    $("#workspacePicker").hidden=view!=="home";
     $("#dashboard").hidden=view!=="calendar";
     $("#primaryWorkspace").hidden=view!=="primary";
     $("#searchPanel").hidden=true;

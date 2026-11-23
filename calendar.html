@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#D90912" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="description" content="Рабочий кабинет первичных организаций Движения Первых Кемского муниципального округа: задачи, акции, дедлайны, календарь и документы." />
+  <title>Акции и мероприятия · Кемский округ</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css?v=20261122-audit" />
+</head>
+<body>
+  <section class="curator-access" id="curatorAccess" hidden aria-labelledby="curatorTitle"><div class="curator-access-card"><img src="pervye-logo.svg" alt="Первые" width="156" height="64" /><p class="curator-kicker">Кемский муниципальный округ</p><h1 id="curatorTitle">Открываем материалы…</h1><p id="curatorMessage" role="status" aria-live="polite">Загружаем опубликованные материалы.</p><p><a class="workspace-home" href="./planner/guide/">Перейти к заданиям первичек</a> · <a class="workspace-home" href="./">Выбор раздела</a></p><div id="loadRecovery" hidden><button class="workspace-home" id="retryContent" type="button">Повторить загрузку</button> <a class="workspace-home" href="./planner/connection.html">Проверить соединение</a></div></div></section>
+  <div id="dashboard" hidden>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="#top" aria-label="Движение Первых · Кемский муниципальный округ">
+        <img class="brand-logo" src="pervye-logo.svg" alt="Первые" width="212" height="90" />
+        <span class="brand-context" id="districtLabel">Кемский муниципальный округ</span>
+      </a>
+      <div class="workspace-header-actions"><a class="workspace-home" href="./">Выбор раздела</a></div>
+      <nav class="header-links" aria-label="Навигация">
+        <a href="#now">Актуальное</a>
+        <a href="#calendar">Календарь</a>
+        <a href="#docs">Документы</a>
+        <a href="#archive">Архив</a>
+      </nav>
+    </div>
+  </header>
+
+  <aside class="kindness-banner" id="kindnessBanner" aria-label="Добрые дела ноября" hidden>
+    <div class="wrap kindness-banner-inner">
+      <div class="kindness-banner-copy">
+        <span class="kindness-mark" aria-hidden="true">♥</span>
+        <div>
+          <strong id="announcementTitle">Добрые дела ноября</strong>
+          <span id="announcementText">Приглашаем присоединиться к добровольческим активностям ноября. Подайте заявку на Добро.рф.</span>
+        </div>
+      </div>
+      <a id="announcementLink" class="kindness-banner-action" target="_blank" rel="noopener" hidden>Подать заявку ↗</a>
+    </div>
+  </aside>
+
+  <nav class="desktop-sidebar" aria-label="Разделы рабочего кабинета">
+    <span class="sidebar-caption">Рабочий кабинет</span>
+    <a href="#now">Актуальное <span data-nav-count="now"></span></a>
+    <a href="#calendar">Календарь <span data-nav-count="calendar"></span></a>
+    <a href="#docs">Документы <span data-nav-count="docs"></span></a>
+    <a href="#favorites">Избранное <span data-nav-count="favorites"></span></a>
+    <a href="#archive">Архив <span data-nav-count="archive"></span></a>
+    
+    <a class="sidebar-top" href="#top">Наверх ↑</a>
+  </nav>
+
+  <main id="top">
+    <section class="intro">
+      <div class="wrap intro-grid">
+        <div class="hero-copy">
+          <div class="hero-meta-line"><span class="eyebrow" id="heroEyebrow">Рабочий кабинет первичных организаций</span><span class="updated-at" id="siteUpdatedAt"></span></div>
+          <h1><span id="heroTitle">Всё важное</span><br><span id="heroAccent">в одном месте.</span></h1>
+          <p id="heroLead">Сроки, задачи, акции и документы для первичных организаций Кемского округа.</p>
+
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+            <input id="globalSearch" type="search" aria-label="Поиск по сайту" placeholder="Найти задачу, акцию, проект или документ…" autocomplete="off" />
+            <kbd id="searchShortcut">Ctrl K</kbd>
+          </div>
+
+          <div class="hero-actions">
+            <a class="primary-action" id="heroPrimary" href="#now">Открыть актуальное</a>
+            <a class="secondary-action" id="heroSecondary" href="#calendar">Открыть календарь</a>
+          </div>
+        </div>
+
+        <aside class="hero-overview" aria-label="Обзор кабинета">
+          <h2>Рабочий кабинет</h2>
+          <p>Выберите материал в «Актуальном». Все сроки и этапы собраны в календаре, завершённые мероприятия — в архиве.</p>
+          <div id="heroOverview" class="overview-links"></div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="workspace-toolbar wrap" aria-label="Настройка отображения">
+      <div class="disclosure-actions">
+        <button type="button" data-sections="collapse">Свернуть всё</button>
+        <button type="button" data-sections="expand">Развернуть всё</button>
+      </div>
+      <div class="view-switch" role="group" aria-label="Вид материалов">
+        <span>Вид материалов</span>
+        <button type="button" data-view="cards" aria-pressed="true">Карточки</button>
+        <button type="button" data-view="list" aria-pressed="false">Список</button>
+      </div>
+    </div>
+
+    <p class="mobile-section-hint wrap">Выберите раздел — нажмите, чтобы раскрыть материалы.</p>
+
+    <section class="current-section" id="now" aria-labelledby="now-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure open>
+          <summary class="section-summary">
+            <span class="section-number red" aria-hidden="true">01</span>
+            <h2 class="section-label"><span id="now-title">Актуальное</span><small id="nowSubtitle">Акции, проекты и задания</small></h2>
+            <span class="section-count" data-section-count="now"></span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+        <p class="section-help">Одна карточка на проект или акцию. Задания и регистрация находятся внутри неё. Завершённые материалы — в <a href="#archive">архиве</a>.</p>
+        <div class="filters" id="currentFilters" aria-label="Фильтр актуальных материалов"></div>
+        <p id="currentResult" class="section-help" role="status" aria-live="polite"></p>
+        <div class="current-grid" id="currentList"></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="calendar-section" id="calendar" aria-labelledby="calendar-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure open>
+          <summary class="section-summary">
+            <span class="section-number blue" aria-hidden="true">02</span>
+            <h2 class="section-label"><span id="calendar-title">Календарь</span><small id="calendarSubtitle">Сентябрь — ноябрь 2026</small></h2>
+            <span class="section-count" data-section-count="calendar"></span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+        <div class="calendar-toolbar">
+          <span>Нажмите на дату или этап, чтобы открыть инструкцию. Прошедшие даты доступны по переключателю.</span>
+          <div class="calendar-legend">
+            <span><i class="legend-dot concept"></i> Акции и проекты</span>
+            <span><i class="legend-dot task"></i> Задания</span>
+            <span><i class="legend-dot event"></i> Этапы и события</span>
+            <span><i class="legend-dot registration"></i> Заявки и документы</span>
+            <span><i class="legend-dot report"></i> Публикации и отчёты</span>
+          </div>
+        </div>
+        <label class="calendar-history"><input type="checkbox" id="calendarHistory" /> Показать прошедшие даты</label>
+        <div class="month-switch" id="calendarMonths"></div>
+        <div class="calendar-shell">
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+        <div class="mobile-agenda" id="calendarAgenda"></div>
+        <details class="calendar-stages">
+          <summary>Этапы конкурсов в выбранном месяце <span id="calendarStageCount"></span></summary>
+          <div id="calendarStages"></div>
+        </details>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="docs-section" id="docs" aria-labelledby="docs-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure open>
+          <summary class="section-summary">
+            <span class="section-number blue" aria-hidden="true">03</span>
+            <h2 class="section-label"><span id="docs-title">Документы</span><small id="docsSubtitle">Всё, что нужно открыть повторно</small></h2>
+            <span class="section-count" data-section-count="docs"></span>
+            <span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body">
+        <div class="docs-grid" id="docsList"></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="favorites-section" id="favorites" aria-labelledby="favorites-title">
+      <div class="wrap">
+        <details class="section-disclosure" data-section-disclosure>
+          <summary class="section-summary">
+            <span class="section-number red" aria-hidden="true">04</span>
+            <h2 class="section-label"><span id="favorites-title">Избранное</span><small>Ваши сохранённые карточки и документы</small></h2>
+            <span class="section-count" data-section-count="favorites"></span><span class="section-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="section-body"><p class="favorites-hint">Нажмите звёздочку у материала. Избранное сохраняется в этом браузере.</p><div class="favorites-grid" id="favoritesList"></div></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="archive-section" id="archive" aria-labelledby="archiveTitle">
+      <div class="wrap">
+        <details class="archive-box section-disclosure" data-section-disclosure>
+          <summary class="section-summary"><span class="section-number blue" aria-hidden="true">05</span><h2 class="section-label"><span id="archiveTitle">Архив</span><small id="archiveSubtitle">Карточки и материалы завершённых событий</small></h2><span class="section-count" data-section-count="archive"></span><span class="section-chevron" aria-hidden="true"></span></summary>
+          <div class="archive-tools"><p>Завершённые мероприятия, акции и задания. Выберите месяц, чтобы найти нужные материалы.</p><div class="filters" id="archiveFilters" aria-label="Месяц завершения"></div></div>
+          <div class="archive-grid" id="archiveList"></div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Быстрая навигация">
+    <a href="#now">Актуальное</a>
+    <a href="#calendar">Календарь</a>
+    <a href="#docs">Документы</a>
+    <a href="#archive">Архив</a>
+  </nav>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div><b id="footerSiteTitle">Первые · Кемский округ</b><span id="footerSubtitle">Рабочий информационный кабинет первичных организаций</span></div>
+      <div class="footer-links"><a href="./admin/" class="admin-entry">Вход для администратора</a><a href="#top">Наверх ↑</a></div>
+    </div>
+  </footer>
+
+  </div>
+
+  <div id="primaryWorkspace" hidden>
+    <header class="site-header">
+      <div class="wrap header-inner primary-header">
+        <a class="brand" href="./" aria-label="Выбор раздела"><img class="brand-logo" src="pervye-logo.svg" alt="Первые" width="212" height="90" /></a>
+        <div class="workspace-header-actions"><a class="workspace-home" href="./">Выбор раздела</a></div>
+      </div>
+    </header>
+    <main class="primary-workspace-main">
+      <div class="wrap" id="primaryContent"></div>
+    </main>
+    <footer class="portal-footer wrap">Первые · Кемский округ</footer>
+  </div>
+
+  <div class="modal" id="detailModal" hidden>
+    <button class="modal-backdrop" type="button" data-close-modal aria-label="Закрыть"></button>
+    <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      <div id="modalContent"></div>
+    </article>
+  </div>
+
+  <div class="search-panel" id="searchPanel" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="connection.js"></script>
+  <script src="access.js?v=20261122-public"></script>
+</body>
+</html>

@@ -20,7 +20,8 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
     const titles = {assignments:'Задания общего зачёта', checklists:'Чек-листы', ded:'Рекомендованные ДЕД'};
     const requested = location.hash.slice(1);
     const active = Object.hasOwn(titles, requested) ? requested : 'assignments';
-    for (const id of Object.keys(titles)) $(id).hidden = id !== active;
+    for (const id of Object.keys(titles)) $(id).hidden = id !== active || (id !== 'ded' && !data);
+    $('loading').hidden = Boolean(data) || active === 'ded';
     for (const link of $('sections').querySelectorAll('a')) {
       if (link.hash === '#' + active) link.setAttribute('aria-current','page');
       else link.removeAttribute('aria-current');
@@ -30,25 +31,26 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
   }
   window.addEventListener('hashchange', switchSection);
   switchSection();
-  async function decode(password){
-    const response=await fetch('./catalog-v1.txt');if(!response.ok)throw Error('Не удалось скачать материалы с GitHub. Обновите страницу.');
-    const bytes=Uint8Array.from(atob(await response.text()),c=>c.charCodeAt(0));
-    const enc=new TextEncoder(),keys=crypto.subtle;
-    const material=await keys.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
-    const key=await keys.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:bytes.slice(0,16),iterations:600000},material,{name:'AES-GCM',length:256},false,['decrypt']);
-    let plain;
-    try{plain=await keys.decrypt({name:'AES-GCM',iv:bytes.slice(16,28),additionalData:enc.encode('kpo-guide-v1')},key,bytes.slice(28));}
-    catch{throw Error('Пароль не подошёл. Проверьте его и попробуйте снова.');}
-    const stream=new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'));
-    return new Response(stream).json();
+  async function loadCatalog() {
+    $('retry').hidden=true;
+    $('status').textContent='Загружаем задания…';
+    try {
+      const response=await fetch('./catalog.json');
+      if (!response.ok) throw new Error();
+      data=await response.json();
+      chooseLeague();
+      mountChecklists($('checklists'),data,$('league').value);
+      switchSection();
+    } catch {
+      data=undefined;
+      switchSection();
+      $('status').textContent='Не удалось загрузить задания. Проверьте соединение и попробуйте ещё раз.';
+      $('retry').hidden=false;
+    }
   }
-  document.querySelector('form').onsubmit=async e=>{
-    e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;$('status').textContent='Открываем задания…';
-    try{data=await decode($('password').value.trim());chooseLeague();mountChecklists($('checklists'),data,$('league').value);mountRecommendedDays($('ded'), data.ded);$('password').value='';$('gate').hidden=true;$('catalog').hidden=false;if(location.hash==='#checklists') $('checklists').querySelector('button').focus(); else if(location.hash==='#ded') $('ded').querySelector('[aria-pressed="true"]').focus(); else $('league').focus();}
-    catch(err){$('status').textContent=err.message||'Не удалось открыть материалы.';}
-    finally{btn.disabled=false;}
-  };
+  mountRecommendedDays($('ded'));
+  $('retry').addEventListener('click',loadCatalog);
+  loadCatalog();
   $('league').onchange=chooseLeague;$('task').onchange=chooseTask;$('variant').onchange=render;
-  $('leave').onclick=()=>location.reload();$('print').onclick=()=>window.print();
-  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
+  $('print').onclick=()=>window.print();
 })();

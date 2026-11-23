@@ -2,23 +2,17 @@
   const version=new URL(document.currentScript.src).searchParams.get('v')||'development';
   const message=document.querySelector('#curatorMessage');
   const gate=document.querySelector('#curatorAccess');
-  function isContest(){return location.hash==='#primary'||new URLSearchParams(location.search).get('card')==='primary-contest';}
-  const contest=isContest();
-  let session='';
-  if(contest){try{session=sessionStorage.getItem('kpoPlannerSession:v1')||'';}catch{}}
-  const goToLogin=()=>location.replace('./planner/');
-  if(contest&&!session){goToLogin();return;}
-  window.addEventListener('hashchange',()=>{if(contest!==isContest())location.reload();});
-  window.addEventListener('pageshow',e=>{if(contest&&e.persisted)location.reload();});
-  if(contest){
-    try{
-      const payload=JSON.parse(atob(session.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));
-      setTimeout(goToLogin,Math.max(0,payload.exp-Date.now()));
-    }catch{goToLogin();return;}
+  function followSection() {
+    if(location.hash==='#home') {location.replace('./');return true;}
+    if(location.hash==='#primary'||new URLSearchParams(location.search).get('card')==='primary-contest') {
+      location.replace('./planner/guide/');return true;
+    }
+    return false;
   }
+  if(followSection()) return;
+  window.addEventListener('hashchange',followSection);
   async function request(path,options={}){
-    const response=await window.kpoConnection.request(path,{...options,headers:session?{Authorization:'Bearer '+session}:{}});
-    if(contest&&response.status===401){goToLogin();throw Error();}
+    const response=await window.kpoConnection.request(path,options);
     if(!response.ok){let details={};try{details=await response.clone().json()}catch{}
       throw Error(details.error||'Не удалось загрузить данные. Повторите попытку позже.');}
     return response;
@@ -32,7 +26,7 @@
     const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
-  const goHome=()=>{location.hash='#home'};
+  const goHome=()=>location.assign('./');
   window.DASHBOARD_ACCESS={download,logout:goHome};
   async function open(){
     const response=await request('/content');
@@ -51,15 +45,6 @@
     return open().catch(()=>{message.textContent='Пока не удалось загрузить календарь и материалы.';recovery.hidden=false;});
   }
   document.querySelector('#retryContent').addEventListener('click',loadContent);
-  const picker=document.querySelector('#workspacePicker');
-  const isHome=()=>!new URLSearchParams(location.search).has('card')&&(!location.hash||location.hash==='#home');
-  let pending=false;
-  function navigate(){
-    if(window.DASHBOARD_PORTAL)return;
-    if(isHome()){gate.hidden=true;picker.hidden=false;return;}
-    picker.hidden=true;gate.hidden=false;
-    if(!pending){pending=true;loadContent().finally(()=>{pending=false;});}
-  }
-  window.addEventListener('hashchange',navigate);
-  navigate();
+  gate.hidden=false;
+  loadContent();
 })();
