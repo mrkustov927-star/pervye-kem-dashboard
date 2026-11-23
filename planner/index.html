@@ -1,4 +1,16 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script>const plannerBase=document.createElement('base');plannerBase.href=location.pathname.replace(/(?:\/index\.html)?\/?$/,'/');document.head.append(plannerBase);</script><meta name="robots" content="noindex"><title>Конкурс первичных отделений · Кабинет кураторов</title><link rel="stylesheet" href="./planner.css"><style>#gate{max-width:32rem;margin:12vh auto;padding:2rem}#tools{padding:.35rem 1rem;text-align:right}#tools a,#tools button{margin-left:1rem;color:#164682} @media print{#tools{display:none}}#gate{background:white;border:1px solid #d6e2ef;border-radius:16px}#gate form:not([hidden]){display:grid;gap:.7rem}#gate input{font:inherit;padding:.7rem;border:1px solid #8ea3bb;border-radius:8px}#tools button{background:white;border:1px solid #bccdde;border-radius:.4rem;padding:.25rem .65rem;cursor:pointer}#gate a{color:#164682}</style></head><body>
-<section id="gate"><p>Кемский муниципальный округ · Сезон 2026–2027</p><h1>План работы первичек</h1><p>Введите общий пароль, который передал куратор конкурса.</p><form id="plannerLogin" hidden><label for="password">Пароль конкурса</label><input id="password" type="password" autocomplete="current-password" required maxlength="300"><button class="button primary" type="submit">Войти</button></form><p><a href="./guide/">Открыть задания и чек-листы на GitHub</a></p><p><a href="../#home">К выбору раздела</a></p><p id="status" role="status"></p><p id="checkLink" hidden><a href="./connection.html">Проверить соединение</a></p><div id="retryActions" hidden><button class="button secondary" id="retryPlanner" type="button">Повторить загрузку</button></div></section>
-<div id="tools" hidden><button id="plannerLogout" type="button">Выйти</button><a href="../#home">Выбор раздела</a></div><div id="planner"></div><script src="../connection.js"></script><script src="./login.js"></script></body></html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Конкурс первичных отделений</title>
+  <script>
+    const editorLink = /^#edit=[A-Za-z0-9_-]{32,200}$/.test(location.hash);
+    const tab = ['#assignments', '#checklists', '#ded'].includes(location.hash) ? location.hash : '';
+    const target = editorLink ? 'teams.html' + location.hash : 'guide/?v=open2' + tab;
+    const directory = location.pathname.replace(/(?:\/index\.html)?\/?$/, '/');
+    location.replace(directory + target);
+  </script>
+</head>
+<body><a href="./guide/?v=open2">Открыть конкурс без пароля</a></body>
+</html>

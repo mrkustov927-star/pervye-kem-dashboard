@@ -37,3 +37,35 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
+      - name: Verify anonymous access to published contest
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const base = new URL(process.env.PAGES_URL.replace(/\/?$/, '/'));
+          const read = async path => {
+            const response = await fetch(new URL(path, base), {signal: AbortSignal.timeout(15000)});
+            assert.equal(response.status, 200, path);
+            return response.text();
+          };
+          const revision = process.env.GITHUB_SHA;
+          for (let attempt = 1; ; attempt++) {
+            try {
+              const home = await read('?check=' + revision);
+              assert.ok(home.includes('href="./planner/guide/?v=open2"'));
+              const guide = await read('planner/guide/?v=open2');
+              const oldLink = await read('planner/?shared=1&check=' + revision);
+              for (const html of [guide, oldLink]) assert.doesNotMatch(html, /type=["']password|id=["']plannerLogin/i);
+              assert.ok(guide.includes('../teams.html'));
+              assert.ok(oldLink.includes('guide/?v=open2'));
+              const catalog = JSON.parse(await read('planner/guide/catalog.json'));
+              assert.ok(catalog.tasks.length && catalog.checklists.length);
+              console.log('Live Pages returned the public selector, both anonymous entry points and the contest catalog.');
+              break;
+            } catch (error) {
+              if (attempt === 8) throw error;
+              await new Promise(resolve => setTimeout(resolve, 10000));
+            }
+          }
+          JS

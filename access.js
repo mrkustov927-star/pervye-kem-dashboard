@@ -5,7 +5,7 @@
   function followSection() {
     if(location.hash==='#home') {location.replace('./');return true;}
     if(location.hash==='#primary'||new URLSearchParams(location.search).get('card')==='primary-contest') {
-      location.replace('./planner/guide/');return true;
+      location.replace('./planner/guide/?v=open2');return true;
     }
     return false;
   }

@@ -83,7 +83,7 @@ test('the public build contains no data file, attachments, or server implementat
  const result=spawnSync(process.execPath,[path.join(root,'scripts/build-public.js')],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);
  for(const name of ['data.js','files','api','lib'])assert.equal(fs.existsSync(path.join(root,'public',name)),false,name);
  const home=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
- assert.match(home,/href="\.\/calendar\.html#calendar"/);assert.match(home,/href="\.\/planner\/guide\/"/);
+ assert.match(home,/href="\.\/calendar\.html#calendar"/);assert.match(home,/href="\.\/planner\/guide\/\?v=open2"/);
  assert.doesNotMatch(home,/<script[^>]+src=["'][^"']*(access|app|connection)\.js/);
  const html=fs.readFileSync(path.join(root,'public/calendar.html'),'utf8');assert.doesNotMatch(html,/<script[^>]+src=["'][^"']*data\.js/);assert.match(html,/access\.js/);assert.match(html,/id="dashboard" hidden/);
 });

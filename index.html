@@ -31,7 +31,7 @@
     <h1 id="heading">Выберите раздел</h1>
     <nav aria-label="Сайты Кемского округа">
       <a href="./calendar.html#calendar"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v5m10-5v5M3 11h18m-13 4h3"/></svg><span>Акции и мероприятия</span></a>
-      <a href="./planner/guide/"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 0 1-8 0zM8 6H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 2v5m-4 1h8"/></svg><span>Конкурс первичных отделений</span></a>
+      <a href="./planner/guide/?v=open2"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 0 1-8 0zM8 6H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 2v5m-4 1h8"/></svg><span>Конкурс первичных отделений</span></a>
     </nav>
   </main>
   <script>
@@ -41,9 +41,9 @@
       const hash = location.hash;
       if (hash === '#home') return;
       if (hash === '#primary' || query.get('card') === 'primary-contest') {
-        location.replace('./planner/guide/');
+        location.replace('./planner/guide/?v=open2');
       } else if (['#assignments', '#checklists', '#ded'].includes(hash)) {
-        location.replace('./planner/guide/' + hash);
+        location.replace('./planner/guide/?v=open2' + hash);
       } else if (query.has('card') || query.has('month') || ['#top','#calendar','#week','#now','#docs','#archive','#projects','#favorites','#updates'].includes(hash)) {
         location.replace('./calendar.html' + location.search + hash);
       }
