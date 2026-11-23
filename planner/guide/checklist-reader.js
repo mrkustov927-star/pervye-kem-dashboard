@@ -1,3 +1,5 @@
+import {contestCards} from './checklist-cards.js';
+
 const leagues = { lv: 'Лига возможностей', pl: 'Первая лига', lo: 'Лига открытий' };
 const seasonTeams = {
   lv: ['Кривопорожская СОШ', 'Подужемская СОШ'],
@@ -67,10 +69,78 @@ export function showVariant(node, league, t, v, r) {
     para(node,'Порядок выполнения заданий, с. '+r.sourcePages.join(', ')+'.');
   }
   
+
+function showChecklist(node, league, task, variant, record, root, marked) {
+  const card = contestCards[task.key + '/' + variant.id] ?? contestCards[variant.id];
+  if (!card) {
+    node.replaceChildren(element('p', 'Чек-лист этого варианта пока недоступен.'));
+    return;
+  }
+  node.replaceChildren(element('h2', variant.title), element('p', card.description, 'cl-description'));
+  if (league === 'pl' && task.key === 'lv-15') {
+    para(node, 'По п. 16.4 этот вариант доступен при отказе подшефной команды от дальнейшего участия и совместной работы. Укажите причину замены в комментарии к отчёту.');
+  }
+  if (task.key === 'pl-15') para(node, record.special);
+  const stages = element('details', '', 'cl-fold cl-stages');
+  stages.append(element('summary', 'Этапы выполнения'));
+  const ordered = element('ol');
+  for (const [, instruction] of card.steps) ordered.append(element('li', instruction));
+  stages.append(ordered);
+  node.append(stages, element('h3', 'Чек-лист выполнения'));
+
+  const checks = element('ul', '', 'cl-checks');
+  const labels = [...card.steps.map(([check]) => check), 'Отчёт отправлен в личном кабинете конкурса.'];
+  labels.forEach((text, index) => {
+    const id = [league, task.key, variant.id, index].join('/');
+    const input = element('input');
+    input.type = 'checkbox';
+    input.dataset.check = id;
+    input.checked = marked.has(id);
+    input.addEventListener('change', () => {
+      if (input.checked) marked.add(id);
+      else marked.delete(id);
+      for (const copy of root.querySelectorAll('.cl-checks input')) {
+        if (copy.dataset.check === id) copy.checked = input.checked;
+      }
+    });
+    const label = element('label');
+    label.append(input, element('span', text));
+    const item = element('li');
+    item.append(label);
+    checks.append(item);
+  });
+  node.append(checks);
+
+  const reference = element('details', '', 'cl-fold cl-reference');
+  reference.append(element('summary', 'Материалы для отчёта и баллы'));
+  const reports = variant.reports.map(report => report.label.replace(/\s*\(по п\. 2\.3[^)]*\)/g, ''));
+  list(reference, 'Что приложить', reports);
+  if (variant.tags?.length) para(reference, variant.tags.join(' '));
+  list(reference, 'Критерии оценки', record.criteria.map(c => c.title + ' · до ' + c.maxPoints + ' б. ' + c.topLevel));
+  if (record.materials?.length) {
+    const links = element('ul');
+    for (const [title, url] of record.materials) {
+      if (!/^https:\/\//i.test(url)) continue;
+      const link = element('a', title);
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      const item = element('li');
+      item.append(link);
+      links.append(item);
+    }
+    reference.append(element('h3', 'Материалы к заданию'), links);
+  }
+  node.append(reference, element('p', 'Порядок выполнения заданий общего зачёта, с. ' + record.sourcePages.join(', ') + '.', 'cl-source'));
+}
+
 function printContent(node) {
+  const closed = [...node.querySelectorAll('.cl-fold:not([open])')];
+  for (const section of closed) section.open = true;
   node.classList.add('cl-print-target');
   document.body.classList.add('cl-printing');
   function clear() {
+    for (const section of closed) section.open = false;
     node.classList.remove('cl-print-target');
     document.body.classList.remove('cl-printing');
     window.removeEventListener('afterprint', clear);
@@ -80,6 +150,7 @@ function printContent(node) {
 }
 
 export function mountChecklists(root, data, initialLeague = 'lv') {
+  const marked = new Set();
   const titles = element('div', '', 'cl-leagues');
   titles.setAttribute('role', 'group');
   titles.setAttribute('aria-label', 'Выбор номинации');
@@ -114,7 +185,7 @@ export function mountChecklists(root, data, initialLeague = 'lv') {
             const record = data.checklists.find(r => r.key === task.key && r.variantId === variant.id);
             if (!record) continue;
             const page = element('article', '', 'cl-article');
-            showVariant(page, code, task, variant, record);
+            showChecklist(page, code, task, variant, record, root, marked);
             book.append(page);
           }
         }
@@ -154,7 +225,7 @@ export function mountChecklists(root, data, initialLeague = 'lv') {
         const print = button('Распечатать вариант', () => printContent(article), 'cl-print');
         function select(v) {
           const record = data.checklists.find(r => r.key === task.key && r.variantId === v.id);
-          if (record) showVariant(article, code, task, v, record);
+          if (record) showChecklist(article, code, task, v, record, root, marked);
           else article.replaceChildren(element('p', 'Чек-лист этого варианта пока недоступен.'));
           print.hidden = !record;
           for (const control of options.children) control.setAttribute('aria-pressed', String(control.dataset.id === v.id));
