@@ -1,4 +1,9 @@
 const leagues = { lv: 'Лига возможностей', pl: 'Первая лига', lo: 'Лига открытий' };
+const seasonTeams = {
+  lv: ['Кривопорожская СОШ', 'Подужемская СОШ'],
+  pl: ['Рабочеостровская СОШ', 'Кемская СОШ № 3', 'Кемская СОШ № 1'],
+  lo: ['Дом творчества', 'Детский сад № 1 (Рабочеостровск)', 'Детский сад № 4 (Кемь)']
+};
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -86,6 +91,9 @@ export function mountChecklists(root, data, initialLeague = 'lv') {
     const label = element('strong', name);
     const count = new Set(leagueTasks(data.tasks, code).map(t => t.number)).size;
     choice.append(label, element('span', count + ' заданий'));
+    const teams = element('span', '', 'cl-teams');
+    for (const team of seasonTeams[code]) teams.append(element('span', team));
+    choice.append(teams);
     titles.append(choice);
     buttons.set(code, choice);
   }

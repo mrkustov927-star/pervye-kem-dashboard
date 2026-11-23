@@ -5,9 +5,11 @@
 .cl-league.cl-lv {--cl-accent:#a52538;--cl-tint:#fff3f3}
 .cl-league.cl-pl {--cl-accent:#255aa0;--cl-tint:#f0f6ff}
 .cl-league.cl-lo {--cl-accent:#126957;--cl-tint:#eff9f5}
-.cl-league {position:relative;min-width:0;display:grid;gap:4px;text-align:left;align-content:center;min-height:78px;padding:12px 28px 12px 14px;color:#23394e;background:#fff;border:1px solid #b9c8d3;border-radius:10px}
+.cl-league {position:relative;min-width:0;display:grid;gap:4px;text-align:left;align-content:start;min-height:78px;padding:12px 28px 12px 14px;color:#23394e;background:#fff;border:1px solid #b9c8d3;border-radius:10px}
 .cl-league strong {font-size:1rem;line-height:1.28}
 .cl-league span,.cl-name small {font-size:.84rem;color:#50677b}
+.cl-teams {grid-column:1/-1;display:grid;gap:2px;margin-top:4px;padding-top:6px;border-top:1px solid #d6e1e8;line-height:1.35;overflow-wrap:anywhere}
+.cl-league .cl-teams span {color:#304c63}
 .cl-league[aria-pressed=true] {background:var(--cl-tint);box-shadow:inset 0 0 0 1px var(--cl-accent);border-color:var(--cl-accent)}
 .cl-league[aria-pressed=true]::after {content:'✓';position:absolute;right:10px;top:9px;font-weight:bold;color:var(--cl-accent)}
 .cl-contents>h2 {font-size:1.35rem;margin:0 0 12px}

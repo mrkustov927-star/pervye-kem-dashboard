@@ -1,6 +1,6 @@
 import {mountDashboard} from './dashboard.js';
 import {mountRecommendedDays} from './recommended-days.js?v=dashboard1';
-import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
+import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js?v=leagues2';
 (()=>{
   const $=id=>document.getElementById(id);
   let data, tasks;
