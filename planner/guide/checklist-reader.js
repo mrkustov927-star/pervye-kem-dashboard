@@ -1,3 +1,4 @@
+import {scoreActions} from './checklist-scores.js';
 import {taskMaterials} from './task-materials.js';
 import {contestCards} from './checklist-cards.js';
 
@@ -118,10 +119,8 @@ function showChecklist(node, league, task, variant, record, root, marked) {
   stages.append(ordered);
   node.append(stages, element('h3', 'Чек-лист выполнения'));
 
-  const checks = element('ul', '', 'cl-checks');
-  const labels = [...card.steps.map(([check]) => check), 'Отчёт отправлен в личном кабинете конкурса.'];
-  labels.forEach((text, index) => {
-    const id = [league, task.key, variant.id, index].join('/');
+  function addCheck(list, suffix, text, points) {
+    const id = [league, task.key, variant.id, suffix].join('/');
     const input = element('input');
     input.type = 'checkbox';
     input.dataset.check = id;
@@ -134,12 +133,27 @@ function showChecklist(node, league, task, variant, record, root, marked) {
       }
     });
     const label = element('label');
-    label.append(input, element('span', text));
+    label.append(input);
+    if (points !== undefined) label.append(element('strong', points + ' б.', 'cl-weight'));
+    label.append(element('span', text));
     const item = element('li');
     item.append(label);
-    checks.append(item);
-  });
+    list.append(item);
+  }
+  const checks = element('ul', '', 'cl-checks');
+  const labels = [...card.steps.map(([check]) => check), 'Отчёт отправлен в личном кабинете конкурса.'];
+  labels.forEach((text, index) => addCheck(checks, index, text));
   node.append(checks);
+
+  const actions = scoreActions[task.key + '/' + variant.id] ?? scoreActions[task.key] ?? [];
+  const scoring = element('section', '', 'cl-scoring');
+  scoring.append(element('h3', 'Для максимального балла'));
+  const scoreChecks = element('ul', '', 'cl-checks cl-score-checks');
+  record.criteria.forEach((criterion, i) => {
+    addCheck(scoreChecks, 'score-' + i, actions[i] ?? criterion.topLevel, criterion.maxPoints);
+  });
+  scoring.append(scoreChecks);
+  node.append(scoring);
 
   const reference = element('details', '', 'cl-fold cl-reference');
   reference.append(element('summary', 'Материалы для отчёта и баллы'));

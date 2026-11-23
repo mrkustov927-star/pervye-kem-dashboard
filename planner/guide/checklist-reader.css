@@ -78,3 +78,8 @@
 .cl-materials ul,.cl-materials p {margin:0}
 .cl-materials li,.cl-article .cl-materials li {margin:3px 0}
 .cl-materials a {color:#185187;overflow-wrap:anywhere}
+
+.cl-scoring {border-top:1px solid #d5e0e9;padding-top:10px}
+.cl-article .cl-scoring h3 {margin:.2em 0}
+.cl-score-checks label {display:grid;grid-template-columns:1em max-content minmax(0,1fr);align-items:baseline}
+.cl-weight {font-size:.84em;font-variant-numeric:tabular-nums;color:#24516b;white-space:nowrap}
