@@ -6,7 +6,7 @@
   <title>Конкурс первичных отделений</title>
   <script>
     const editorLink = /^#edit=[A-Za-z0-9_-]{32,200}$/.test(location.hash);
-    const tab = ['#assignments', '#checklists', '#ded'].includes(location.hash) ? location.hash : '';
+    const tab = ['#assignments', '#checklists', '#ded', '#dashboard'].includes(location.hash) ? location.hash : '';
     const target = editorLink ? 'teams.html' + location.hash : 'guide/?v=open2' + tab;
     const directory = location.pathname.replace(/(?:\/index\.html)?\/?$/, '/');
     location.replace(directory + target);

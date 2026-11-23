@@ -1,5 +1,5 @@
 // Published calendar dates and preparation notes for the 2026–2027 season.
-const recommendations = [
+export const recommendations = [
   {
     "date": "2026-11-25",
     "period": "25–29 ноября 2026",

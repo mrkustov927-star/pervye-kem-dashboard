@@ -1,4 +1,5 @@
-import {mountRecommendedDays} from './recommended-days.js';
+import {mountDashboard} from './dashboard.js';
+import {mountRecommendedDays} from './recommended-days.js?v=dashboard1';
 import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
 (()=>{
   const $=id=>document.getElementById(id);
@@ -17,11 +18,11 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
     showVariant($('detail'), $('league').value, t, v, r);
   }
   function switchSection() {
-    const titles = {assignments:'Задания общего зачёта', checklists:'Чек-листы', ded:'Рекомендованные ДЕД'};
+    const titles = {assignments:'Задания общего зачёта', checklists:'Чек-листы', ded:'Рекомендованные ДЕД', dashboard:'Календарь конкурса'};
     const requested = location.hash.slice(1);
     const active = Object.hasOwn(titles, requested) ? requested : 'assignments';
-    for (const id of Object.keys(titles)) $(id).hidden = id !== active || (id !== 'ded' && !data);
-    $('loading').hidden = Boolean(data) || active === 'ded';
+    for (const id of Object.keys(titles)) $(id).hidden = id !== active || (!['ded','dashboard'].includes(id) && !data);
+    $('loading').hidden = Boolean(data) || ['ded','dashboard'].includes(active);
     for (const link of $('sections').querySelectorAll('a')) {
       if (link.hash === '#' + active) link.setAttribute('aria-current','page');
       else link.removeAttribute('aria-current');
@@ -48,6 +49,7 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
       $('retry').hidden=false;
     }
   }
+  mountDashboard($('dashboard'));
   mountRecommendedDays($('ded'));
   $('retry').addEventListener('click',loadCatalog);
   loadCatalog();

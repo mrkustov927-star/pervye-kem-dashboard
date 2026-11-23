@@ -42,7 +42,7 @@
       if (hash === '#home') return;
       if (hash === '#primary' || query.get('card') === 'primary-contest') {
         location.replace('./planner/guide/?v=open2');
-      } else if (['#assignments', '#checklists', '#ded'].includes(hash)) {
+      } else if (['#assignments', '#checklists', '#ded', '#dashboard'].includes(hash)) {
         location.replace('./planner/guide/?v=open2' + hash);
       } else if (query.has('card') || query.has('month') || ['#top','#calendar','#week','#now','#docs','#archive','#projects','#favorites','#updates'].includes(hash)) {
         location.replace('./calendar.html' + location.search + hash);

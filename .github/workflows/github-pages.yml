@@ -54,10 +54,13 @@ jobs:
             try {
               const home = await read('?check=' + revision);
               assert.ok(home.includes('href="./planner/guide/?v=open2"'));
-              const guide = await read('planner/guide/?v=open2');
+              const guide = await read('planner/guide/?dashboard-check=' + revision);
               const oldLink = await read('planner/?shared=1&check=' + revision);
               for (const html of [guide, oldLink]) assert.doesNotMatch(html, /type=["']password|id=["']plannerLogin/i);
               assert.ok(guide.includes('../teams.html'));
+              assert.ok(guide.includes('href="#dashboard"'));
+              assert.ok((await read('planner/guide/dashboard-plan.js')).includes('Мосты дружбы'));
+              assert.ok((await read('planner/guide/dashboard.js')).includes('mountDashboard'));
               assert.ok(oldLink.includes('guide/?v=open2'));
               const catalog = JSON.parse(await read('planner/guide/catalog.json'));
               assert.ok(catalog.tasks.length && catalog.checklists.length);
