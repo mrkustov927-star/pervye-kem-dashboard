@@ -1,3 +1,4 @@
+import {taskMaterials} from './task-materials.js';
 import {contestCards} from './checklist-cards.js';
 
 const leagues = { lv: 'Лига возможностей', pl: 'Первая лига', lo: 'Лига открытий' };
@@ -35,10 +36,39 @@ const para=(node,text)=>{if(text)node.append(el('p',text));};
     node.append(ul);
   }
 
+function appendTaskMaterials(node, record) {
+  const materials = taskMaterials(record);
+  const hints = {
+    journal: 'На сайте конкурса откройте «Полезные материалы» → «Календарь Первых». Перечень Дней единых действий находится в разделе «Акции».',
+    spartak: 'Видеовызов футболистов ФК «Спартак-Москва» размещён в карточке задания на сайте конкурса.'
+  };
+  const hint = hints[record.variantId];
+  if (!materials.length && !hint) return;
+  const section = element('section', '', 'cl-materials');
+  section.append(element('h3', 'Материалы из Порядка'));
+  if (hint) para(section, hint);
+  if (materials.length) {
+    const links = element('ul');
+    for (const [title, url] of materials) {
+      if (!/^https:\/\//i.test(url)) continue;
+      const link = element('a', title);
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      const item = element('li');
+      item.append(link);
+      links.append(item);
+    }
+    section.append(links);
+  }
+  node.append(section);
+}
+
 export function showVariant(node, league, t, v, r) {
     node.replaceChildren();
     para(node, leagues[league]+' · Задание № '+t.number+' · До '+t.points+' баллов');
     node.append(el('h2',v.title));para(node,v.specific);
+    appendTaskMaterials(node, r);
     const dates=el('p','Первичка ____________________   Начало __________   Завершение __________   Сдача __________');dates.className='print-fields';node.append(dates);
     if(league==='pl'&&t.key==='lv-15')para(node,'Замена по п. 16.4 при отказе подшефной команды. Обоснуйте замену в комментарии к отчёту.');
     if(v.needsAnnouncement)para(node,'Опубликуйте анонс минимум за один календарный день до события.');
@@ -54,7 +84,6 @@ export function showVariant(node, league, t, v, r) {
     if(v.tags?.length)para(node,v.tags.join(' '));
     list(node,'Что нужно для максимального балла',r.criteria.map(c=>c.title+' · до '+c.maxPoints+' б. '+c.topLevel));
     list(node,'За что можно потерять баллы',r.pitfalls);
-    if(r.materials?.length){node.append(el('h3','Материалы к заданию'));for(const [title,url] of r.materials){if(!/^https:\/\//i.test(url))continue;const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';const p=el('p');p.append(a);node.append(p);}}
     if(r.worksheet?.length){
       node.append(el('h3','Рабочий лист команды'));
       const table=el('table'), head=table.createTHead().insertRow();
@@ -81,6 +110,7 @@ function showChecklist(node, league, task, variant, record, root, marked) {
     para(node, 'По п. 16.4 этот вариант доступен при отказе подшефной команды от дальнейшего участия и совместной работы. Укажите причину замены в комментарии к отчёту.');
   }
   if (task.key === 'pl-15') para(node, record.special);
+  appendTaskMaterials(node, record);
   const stages = element('details', '', 'cl-fold cl-stages');
   stages.append(element('summary', 'Этапы выполнения'));
   const ordered = element('ol');
@@ -117,20 +147,6 @@ function showChecklist(node, league, task, variant, record, root, marked) {
   list(reference, 'Что приложить', reports);
   if (variant.tags?.length) para(reference, variant.tags.join(' '));
   list(reference, 'Критерии оценки', record.criteria.map(c => c.title + ' · до ' + c.maxPoints + ' б. ' + c.topLevel));
-  if (record.materials?.length) {
-    const links = element('ul');
-    for (const [title, url] of record.materials) {
-      if (!/^https:\/\//i.test(url)) continue;
-      const link = element('a', title);
-      link.href = url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      const item = element('li');
-      item.append(link);
-      links.append(item);
-    }
-    reference.append(element('h3', 'Материалы к заданию'), links);
-  }
   node.append(reference, element('p', 'Порядок выполнения заданий общего зачёта, с. ' + record.sourcePages.join(', ') + '.', 'cl-source'));
 }
 

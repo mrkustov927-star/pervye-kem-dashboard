@@ -1,9 +1,12 @@
 const raw = (window as any).planCatalog.checklists;
+import {taskMaterials} from '../guide/task-materials.js';
 import type {Task,Template,Variant} from './model';
 export type ChecklistItem={id:string;label:string;detail:string;evidence:string;kind:'requirement'|'quality';source:string;reportKey?:string;method?:string};
 export type ChecklistSection={id:string;title:string;items:ChecklistItem[]};
 export type ChecklistRecord={key:string;variantId:string;sourcePages:number[];sections:ChecklistSection[];criteria:{title:string;maxPoints:number;topLevel:string;lower:string[]}[];pitfalls:string[];materials?:[string,string][];worksheet?:string[];rows?:number;alternative?:string;special?:string};
-export const checklistRecords=raw as ChecklistRecord[];
+export const checklistRecords = (raw as ChecklistRecord[]).map(record => ({
+ ...record, materials: taskMaterials(record)
+}));
 export const checkpointKey=(variantId:string,itemId:string)=>variantId+'/'+itemId;
 export function isCheckpointDone(task:Task,variantId:string,item:ChecklistItem){return item.reportKey?!!task.reports[item.reportKey]?.checked:!!task.checklist?.[checkpointKey(variantId,item.id)]}
 export function checklistFor(t:Template,v:Variant):ChecklistRecord{
