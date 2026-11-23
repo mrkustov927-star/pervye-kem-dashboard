@@ -1,8 +1,18 @@
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {mountRecommendedDays} from '../guide/recommended-days.js';
+import '../guide/recommended-days.css';
 import type {ViewProps} from './planner';
 const dates = (window as any).planCatalog.ded;
 
 export {dates as dedDates};
+
+export function RecommendedDays() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (root.current) mountRecommendedDays(root.current, dates);
+  }, []);
+  return <div ref={root}/>;
+}
 
 export function DedPlan({plan,team,openEvent,readOnly}:ViewProps) {
   const [error,setError]=useState('');

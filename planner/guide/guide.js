@@ -1,3 +1,4 @@
+import {mountRecommendedDays} from './recommended-days.js';
 import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
 (()=>{
   const $=id=>document.getElementById(id);
@@ -16,14 +17,15 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
     showVariant($('detail'), $('league').value, t, v, r);
   }
   function switchSection() {
-    const checklists = location.hash === '#checklists';
-    $('assignments').hidden = checklists;
-    $('checklists').hidden = !checklists;
-    for(const link of $('sections').querySelectorAll('a')){
-      if(link.hash === (checklists ? '#checklists' : '#assignments')) link.setAttribute('aria-current','page');
+    const titles = {assignments:'Задания общего зачёта', checklists:'Чек-листы', ded:'Рекомендованные ДЕД'};
+    const requested = location.hash.slice(1);
+    const active = Object.hasOwn(titles, requested) ? requested : 'assignments';
+    for (const id of Object.keys(titles)) $(id).hidden = id !== active;
+    for (const link of $('sections').querySelectorAll('a')) {
+      if (link.hash === '#' + active) link.setAttribute('aria-current','page');
       else link.removeAttribute('aria-current');
     }
-    $('pageTitle').textContent = checklists ? 'Чек-листы' : 'Задания общего зачёта';
+    $('pageTitle').textContent = titles[active];
     document.title = $('pageTitle').textContent + ' · Конкурс первичек';
   }
   window.addEventListener('hashchange', switchSection);
@@ -42,7 +44,7 @@ import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js';
   }
   document.querySelector('form').onsubmit=async e=>{
     e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;$('status').textContent='Открываем задания…';
-    try{data=await decode($('password').value.trim());chooseLeague();mountChecklists($('checklists'),data,$('league').value);$('password').value='';$('gate').hidden=true;$('catalog').hidden=false;if(location.hash==='#checklists') $('checklists').querySelector('button').focus(); else $('league').focus();}
+    try{data=await decode($('password').value.trim());chooseLeague();mountChecklists($('checklists'),data,$('league').value);mountRecommendedDays($('ded'), data.ded);$('password').value='';$('gate').hidden=true;$('catalog').hidden=false;if(location.hash==='#checklists') $('checklists').querySelector('button').focus(); else if(location.hash==='#ded') $('ded').querySelector('[aria-pressed="true"]').focus(); else $('league').focus();}
     catch(err){$('status').textContent=err.message||'Не удалось открыть материалы.';}
     finally{btn.disabled=false;}
   };

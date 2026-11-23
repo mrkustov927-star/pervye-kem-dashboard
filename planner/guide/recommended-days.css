@@ -1,0 +1,18 @@
+.ded-months{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0 22px}
+.ded-months button{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;min-height:48px;padding:10px 14px;background:#fff;color:#243f55;border:1px solid #b4c5d1;border-radius:9px;font:inherit;cursor:pointer}
+.ded-months button span{font-size:.86em}
+.ded-months button[aria-pressed=true]{background:#193e60;color:#fff;border-color:#193e60}
+.ded-months button:focus-visible{outline:3px solid #4485c3;outline-offset:2px}
+.ded-results h2{font-size:1.35rem;margin:0 0 12px}
+.ded-card{background:white;border:1px solid #cddae4;border-radius:12px;padding:clamp(14px,3vw,24px);margin:0 0 12px;overflow-wrap:anywhere}
+.ded-card h3{font-size:1.2rem;margin:.7rem 0 .4rem;line-height:1.3}
+.ded-card p{margin:.35rem 0 .8rem}
+.ded-card a,.ded-source a{color:#185687;text-decoration:underline}
+.ded-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.ded-meta time{font-weight:650}
+.ded-status,.ded-reserve{font-size:.82rem;padding:2px 8px;border-radius:5px;color:#634407;background:#fcf0cf}
+.ded-status.confirmed{background:#def3e9;color:#17523c}
+.ded-reserve{background:#edf1f5;color:#46596b}
+.ded-source{font-size:.92rem;color:#50677b}
+@media(max-width:600px){.ded-months{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{.ded-months{display:none}.ded-card{break-inside:avoid}}
