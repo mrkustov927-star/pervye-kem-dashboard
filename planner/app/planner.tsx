@@ -5,7 +5,7 @@ import {Plan,Team,Template,Event,League,forTeam,getTask,variant,initialPlan,pars
 import {MapView,CalendarView,JournalView,TeamsView,RulesView} from './views';
 import {TaskDialog,EventDialog,TeamDialog} from './dialogs';
 import {DistrictDashboard} from './district-dashboard';
-import {RecommendedDays} from './ded-plan';
+import {DecemberNotice,RecommendedDays} from './ded-plan';
 import {ChecklistReader} from './checklist-reader';
 export type Update=(fn:(p:Plan)=>void)=>void;
 export type ViewProps={readOnly?:boolean;plan:Plan;team:Team;update:Update;openTask:(key:string,tab?:string)=>void;openEvent:(e?:Event,taskKey?:string,preset?:Partial<Event>)=>void;openTeam:(t?:Team)=>void;selectTeam:(id:string)=>void;focusTask:(teamId:string,key:string)=>void;showTeams:()=>void;selected:string;selectTask:(key:string)=>void};
@@ -84,6 +84,7 @@ export default function Planner(){
   if(issue.eventId)props.openEvent(plan.events.find(e=>e.id===issue.eventId));
   else if(issue.taskKey)openTask(issue.taskKey,issue.title.includes('комплект')?'reports':/зависим|Цикл/.test(issue.title)?'links':'plan');
  }}>{issue.taskKey?'№ '+list.find(t=>t.key===issue.taskKey)?.number+' · ':''}{issue.title} — {issue.detail}</button>)}</details>}</div></>}
+ {['map','checklists','ded','dashboard'].includes(view)&&<DecemberNotice/>}
  {view==='dashboard'?<DistrictDashboard plan={plan}/>:view==='ded'?<RecommendedDays/>:view==='checklists'?<ChecklistReader league={team.league}/>:view==='map'?<MapView key={team.id} {...props}/>:view==='calendar'?<CalendarView {...props}/>:view==='journal'?<JournalView key={team.id} {...props}/>:view==='teams'?<TeamsView {...props}/>:<RulesView/>}
  <footer className="page-footer">Общий зачёт до 28 февраля 2027, 23:59 мск · Статусы в плане отмечает команда</footer></main></div></div>
  {taskDialog&&<TaskDialog key={team.id+'/'+taskDialog+'/'+taskTab} {...props} initialTab={taskTab} taskKey={taskDialog} close={()=>setTaskDialog(null)}/>}{eventDialog&&<EventDialog {...props} value={eventDialog.event} presetTask={eventDialog.taskKey} preset={eventDialog.preset} close={()=>setEventDialog(null)}/>}{teamDialog&&<TeamDialog {...props} value={teamDialog.team} close={()=>setTeamDialog(null)}/>}

@@ -17,11 +17,16 @@
 @media(max-width:600px){.ded-months{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{.ded-months{display:none}.ded-card{break-inside:avoid}}
 
-.ded-journal{background:#f1f6fa;border-left:3px solid #406885;border-radius:6px;padding:12px 14px;margin:0 0 15px}
-.ded-journal p{margin:4px 0 0}
+.december-notice{margin:0 0 12px;padding:8px 12px;background:#eef5fb;border:1px solid #c6daeb;border-radius:8px;color:#234968;overflow-wrap:anywhere}
+.december-notice summary,.ded-task-matches summary{cursor:pointer;font-weight:650}
+.december-notice p{margin:8px 0}
+.december-notice a,.db-entry a.db-cite{color:#185687;text-decoration:underline}
+.december-notice.cl-december{margin:12px 0}
 .ded-task-matches{margin:.65rem 0 .8rem}
-.ded-task-matches summary{cursor:pointer;color:#185687;font-weight:650}
-.ded-task-matches dl{margin:.55rem 0 .1rem}
-.ded-task-matches dt{font-weight:650;margin:.6rem 0 .15rem}
-.ded-task-matches dd{margin:0}
-@media print{.ded-task-matches::details-content{display:contents;content-visibility:visible}}
+.ded-task-matches summary{color:#185687}
+.december-matches{margin:.5rem 0 .9rem;line-height:1.45}
+.december-matches dt{font-weight:650;margin:.6rem 0 .15rem}
+.december-matches dd{margin:0}
+.december-cite{display:block;color:#486277;margin-top:.15rem}
+.db-entry h5{margin:.7em 0 .3em;font-size:.9rem}
+@media print{.ded-task-matches::details-content,.cl-december::details-content{display:contents;content-visibility:visible}}

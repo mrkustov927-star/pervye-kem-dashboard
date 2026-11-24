@@ -1,3 +1,4 @@
+import {appendTaskRecommendations} from './december-guidance.js';
 import {scoreActions} from './checklist-scores.js';
 import {taskMaterials} from './task-materials.js';
 import {contestCards} from './checklist-cards.js';
@@ -69,6 +70,7 @@ export function showVariant(node, league, t, v, r) {
     node.replaceChildren();
     para(node, leagues[league]+' · Задание № '+t.number+' · До '+t.points+' баллов');
     node.append(el('h2',v.title));para(node,v.specific);
+    appendTaskRecommendations(node, league, t.key, v.id);
     appendTaskMaterials(node, r);
     const dates=el('p','Первичка ____________________   Начало __________   Завершение __________   Сдача __________');dates.className='print-fields';node.append(dates);
     if(league==='pl'&&t.key==='lv-15')para(node,'Замена по п. 16.4 при отказе подшефной команды. Обоснуйте замену в комментарии к отчёту.');
@@ -111,6 +113,7 @@ function showChecklist(node, league, task, variant, record, root, marked) {
     para(node, 'По п. 16.4 этот вариант доступен при отказе подшефной команды от дальнейшего участия и совместной работы. Укажите причину замены в комментарии к отчёту.');
   }
   if (task.key === 'pl-15') para(node, record.special);
+  appendTaskRecommendations(node, league, task.key, variant.id);
   appendTaskMaterials(node, record);
   const stages = element('details', '', 'cl-fold cl-stages');
   stages.append(element('summary', 'Этапы выполнения'));

@@ -1,10 +1,19 @@
 import {useEffect,useRef,useState} from 'react';
+import {createDecemberNotice} from '../guide/december-guidance.js';
 import {mountRecommendedDays} from '../guide/recommended-days.js';
 import '../guide/recommended-days.css';
 import type {ViewProps} from './planner';
 const dates = (window as any).planCatalog.ded;
 
 export {dates as dedDates};
+
+export function DecemberNotice() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (root.current) root.current.replaceChildren(createDecemberNotice());
+  }, []);
+  return <div ref={root}/>;
+}
 
 export function RecommendedDays() {
   const root = useRef<HTMLDivElement>(null);

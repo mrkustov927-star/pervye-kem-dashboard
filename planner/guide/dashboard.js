@@ -1,5 +1,6 @@
 import {tasks, meetings} from './dashboard-plan.js';
-import {recommendations as actionDays} from './recommended-days.js?v=dashboard1';
+import {recommendations as actionDays} from './recommended-days.js?v=december2';
+import {journalRule, renderActionMatches, rulesLink} from './december-guidance.js';
 
 const leagues = {lv:'Лига возможностей', pl:'Первая лига', lo:'Лига открытий'};
 const all = Object.keys(leagues);
@@ -54,6 +55,21 @@ function entries(teamRows) {
   add('2026-11-30','«Добрые лапы» · Помощь и публикация','advice',all,'task','Порядок рекомендует провести задание и опубликовать результат ко Всемирному дню домашних животных. Для старших лиг это вариант № 13, для Лиги открытий — № 8.','Порядок · прил. 1, № 13 · прил. 2, № 8');
   for(const day of ['2026-11-23','2026-12-31']) add(day,'«Атомный клуб» · Рекомендованный период','advice',['lv','pl'],'task','Порядок рекомендует ноябрь–декабрь для этого варианта № 8. В календаре показаны границы этого периода внутри общего зачёта.','Порядок · прил. 1, задание № 8');
   for(const a of actionDays) {
+    if (a.matches) {
+      for (const [day, phase] of [[a.date, 'Начало акции'], [a.endDate, 'Завершение акции']]) {
+        out.push({
+          day,
+          title: phase + ' · «' + a.title + '»',
+          kind: 'advice',
+          leagues: all,
+          area: 'ded',
+          detail: a.period + '. ' + a.detail,
+          source: 'Рекомендации по всероссийским акциям на декабрь 2026',
+          campaign: a
+        });
+      }
+      continue;
+    }
     add(a.date,a.title,a.confirmed?'fixed':'advice',all,'ded',a.period+'. '+a.detail,a.source);
     if(a.confirmed && a.date==='2026-11-25') add('2026-11-29','«Мамино сердце» · Завершить акцию и опубликовать итог','fixed',all,'ded','Последний день акции и публикации итогов. В бортовом журнале сохраните ссылку и число участников.','Рекомендации по всероссийским акциям на ноябрь 2026 г.');
   }
@@ -69,7 +85,7 @@ export function mountDashboard(root, teamRows=[]) {
   function change(fn){return value=>{fn(value);selected='';draw();};}
   filters.append(
     selector('Лига',[['','Все три лиги'],...Object.entries(leagues)],change(v=>league=v)),
-    selector('С кем работаем',[['','Все задания и события'],['joint','Вся совместная работа'],['mentor','Шеф и подшефная команда'],['bridge','Другие первички · Мосты дружбы']],change(v=>area=v)),
+    selector('С кем работаем',[['','Все задания и события'],['joint','Вся совместная работа'],['mentor','Шеф и подшефная команда'],['bridge','Другие первички · Мосты дружбы'],['ded','Дни единых действий']],change(v=>area=v)),
     selector('Какие даты',[['','Все даты'],['fixed','Точные даты'],['plan','План округа'],['advice','Рекомендации'],...(teamRows.length?[['team','В плане команды']]:[])],change(v=>kind=v))
   );
   const optional=node('label','','db-opt'),box=node('input');box.type='checkbox';optional.append(box,'Показать другие варианты заданий');
@@ -129,7 +145,19 @@ export function mountDashboard(root, teamRows=[]) {
       if(lastDay!==e.day){cards.append(node('h4',format(e.day)));lastDay=e.day;}
       const card=node('details','','db-entry '+e.kind);
       const s=node('summary');s.append(node('small',labels[e.kind]+(e.alternative?' · другой вариант':'')),node('strong',e.title),node('span',e.leagues.length===3?'Все три лиги':e.leagues.map(c=>leagues[c]).join(' · '),'db-who'));
-      card.append(s,node('p',e.detail),node('small',e.source,'db-cite'));cards.append(card);
+      card.append(s,node('p',e.detail));
+      if (e.campaign) {
+        card.append(node('p', '№ 2 «Бортовой журнал»: сверьте акцию с официальным перечнем ДЕД. ' + journalRule, 'db-ded-rule'));
+        const matches = renderActionMatches(e.campaign, league);
+        if (matches.childElementCount) card.append(node('h5', 'Для каких заданий подходит'), matches);
+        const source = node('a', 'Порядок в канале конкурса', 'db-cite');
+        source.href = rulesLink;
+        source.target = '_blank';
+        source.rel = 'noopener noreferrer';
+        card.append(source);
+      }
+      card.append(node('small',e.source,'db-cite'));
+      cards.append(card);
     }
     if(!cards.childElementCount)cards.append(node('p',selected?'На этот день по выбранным условиям записей нет.':'В этом месяце по выбранным условиям записей нет.','db-empty'));
     cards.scrollTop=0;

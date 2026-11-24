@@ -1,8 +1,10 @@
-import {mountDashboard} from './dashboard.js';
-import {mountRecommendedDays} from './recommended-days.js?v=december1';
-import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js?v=score1';
+import {createDecemberNotice} from './december-guidance.js';
+import {mountDashboard} from './dashboard.js?v=december2';
+import {mountRecommendedDays} from './recommended-days.js?v=december2';
+import {mountChecklists, showVariant, leagueTasks} from './checklist-reader.js?v=december2';
 (()=>{
   const $=id=>document.getElementById(id);
+  $('december-explanation').append(createDecemberNotice());
   let data, tasks;
   function options(id,values){$(id).replaceChildren(...values.map(([value,label])=>new Option(label,value)));}
   function chooseLeague(){

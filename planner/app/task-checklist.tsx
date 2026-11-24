@@ -1,8 +1,9 @@
 'use client';
-import {useId,useRef,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import {Check,Download,FileText,Printer} from 'lucide-react';
 import type {Task,Template,Variant} from './model';
 import {checklistFor,checkpointKey,isCheckpointDone} from './checklists';
+import {appendTaskRecommendations} from '../guide/december-guidance.js';
 import type {ChecklistItem} from './checklists';
 
 function exportChecklist(content:HTMLElement,title:string,print:boolean){
@@ -40,6 +41,13 @@ function exportChecklist(content:HTMLElement,title:string,print:boolean){
 
 export function TaskChecklist({task,template,variant,leagueName,patch,openReports,readOnly=false,initialSection='prepare'}:{task:Task;template:Template;variant:Variant;leagueName:string;patch:(value:Partial<Task>)=>void;initialSection?:string;openReports?:()=>void;readOnly?:boolean}){
   const data=checklistFor(template,variant),[remaining,setRemaining]=useState(false),content=useRef<HTMLDivElement>(null);
+  const guidance = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!guidance.current) return;
+    guidance.current.replaceChildren();
+    const league = leagueName === 'Первая лига' ? 'pl' : template.league;
+    appendTaskRecommendations(guidance.current, league, template.key, variant.id);
+  }, [leagueName, template.key, template.league, variant.id]);
   const prefix=useId();
   function exportBlank(print:boolean){
     if(content.current)exportChecklist(content.current,leagueName+' · № '+template.number+' · '+variant.title,print);
@@ -53,6 +61,7 @@ export function TaskChecklist({task,template,variant,leagueName,patch,openReport
   return <div className="full-checklist" ref={content}>
     <section className="team-brief"><div className="checklist-overview"><h3>Что сделать</h3><div className="checklist-actions" data-screen-only><button type="button" className="button secondary" onClick={()=>exportBlank(true)}><Printer size={15}/>Распечатать бланк</button><button type="button" className="button secondary" onClick={()=>exportBlank(false)}><Download size={15}/>Скачать чек-лист</button></div></div>
       <p>{variant.specific}</p>
+      <div ref={guidance}/>
       {variant.needsAnnouncement&&<p className="note"><strong>До мероприятия</strong> · Опубликуйте анонс минимум за один календарный день и сохраните ссылку.</p>}<h3>Что сдать</h3><ul>{variant.reports.map(r=><li key={r.key}>{r.label}</li>)}</ul>
       {!!data.materials?.length&&<div><strong>Материалы из Порядка</strong><ul>{data.materials?.map(([label,href])=><li key={href}><a href={href} target="_blank" rel="noreferrer">{label}</a></li>)}</ul></div>}
       {data.alternative&&<details><summary>Вариант отчёта для организаций с АОП</summary><p>{data.alternative}</p></details>}
