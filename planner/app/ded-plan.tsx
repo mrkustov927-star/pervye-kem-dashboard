@@ -9,7 +9,7 @@ export {dates as dedDates};
 export function RecommendedDays() {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (root.current) mountRecommendedDays(root.current, dates);
+    if (root.current) mountRecommendedDays(root.current);
   }, []);
   return <div ref={root}/>;
 }

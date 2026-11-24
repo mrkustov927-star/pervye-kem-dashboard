@@ -16,3 +16,12 @@
 .ded-source{font-size:.92rem;color:#50677b}
 @media(max-width:600px){.ded-months{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{.ded-months{display:none}.ded-card{break-inside:avoid}}
+
+.ded-journal{background:#f1f6fa;border-left:3px solid #406885;border-radius:6px;padding:12px 14px;margin:0 0 15px}
+.ded-journal p{margin:4px 0 0}
+.ded-task-matches{margin:.65rem 0 .8rem}
+.ded-task-matches summary{cursor:pointer;color:#185687;font-weight:650}
+.ded-task-matches dl{margin:.55rem 0 .1rem}
+.ded-task-matches dt{font-weight:650;margin:.6rem 0 .15rem}
+.ded-task-matches dd{margin:0}
+@media print{.ded-task-matches::details-content{display:contents;content-visibility:visible}}
